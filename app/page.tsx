@@ -46,7 +46,7 @@ export default function Home() {
     loadMaps()
 
     // Get user IP and country
-    fetch('http://ip-api.com/json/?fields=status,countryCode,query')
+    fetch('https://ip-api.com/json/?fields=status,countryCode,query')
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
@@ -219,16 +219,18 @@ export default function Home() {
       </div>
 
       <div className="relative">
-        {/* Game Header */}
-        <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4">
-          <div className="flex items-center gap-4">
-            <span className="text-yellow-400 font-bold">SCORE: {score}</span>
-            <span className="text-green-400 font-bold">LEVEL: {level}</span>
+        {/* Game Header - show when playing, paused, gameover, or victory */}
+        {(gameState === 'playing' || gameState === 'paused' || gameState === 'gameover' || gameState === 'victory') && (
+          <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4">
+            <div className="flex items-center gap-4">
+              <span className="text-yellow-400 font-bold">SCORE: {score}</span>
+              <span className="text-green-400 font-bold">LEVEL: {level}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-red-400 font-bold">LIVES: {'❤️'.repeat(lives)}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-red-400 font-bold">LIVES: {'❤️'.repeat(lives)}</span>
-          </div>
-        </div>
+        )}
 
         {/* Game Canvas */}
         <canvas
