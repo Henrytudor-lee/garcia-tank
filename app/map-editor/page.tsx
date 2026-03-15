@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CustomMap, TileType, Position } from '@/src/game/types'
-import { CustomMapStorage } from '@/src/game/CustomMapStorage'
+import { useAuth } from '@/src/lib/auth-context'
+import { getMapById, saveCustomMap, updateCustomMap } from '@/src/lib/maps'
 
 type EditMode = 'wall' | 'player' | 'base' | 'enemy' | 'erase'
 
@@ -19,6 +20,7 @@ function MapEditorContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const mapId = searchParams.get('id')
+  const { user, loading: authLoading } = useAuth()
 
   const [mapName, setMapName] = useState('新地图')
   const [mapWidth, setMapWidth] = useState(13)
@@ -35,27 +37,57 @@ function MapEditorContent() {
   const [editMode, setEditMode] = useState<EditMode>('wall')
   const [selectedTileType, setSelectedTileType] = useState<TileType>(TileType.BRICK)
   const [isDragging, setIsDragging] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Load existing map if editing
   useEffect(() => {
-    if (mapId) {
-      const existingMap = CustomMapStorage.getMapById(mapId)
-      if (existingMap) {
-        setMapName(existingMap.name)
-        setMapWidth(existingMap.width)
-        setMapHeight(existingMap.height)
-        setTiles(existingMap.tiles)
-        setPlayerSpawn(existingMap.playerSpawn)
-        setBasePosition(existingMap.basePosition)
-        setEnemySpawns(existingMap.enemySpawns)
-        return
+    if (authLoading) return
+
+    const loadMap = async () => {
+      if (mapId) {
+        if (user) {
+          // Load from database
+          const dbMap = await getMapById(mapId)
+          if (dbMap) {
+            setMapName(dbMap.name)
+            setMapWidth(dbMap.width)
+            setMapHeight(dbMap.height)
+            setTiles(dbMap.tiles)
+            setPlayerSpawn(dbMap.playerSpawn)
+            setBasePosition(dbMap.basePosition)
+            setEnemySpawns(dbMap.enemySpawns)
+            setLoading(false)
+            return
+          }
+        } else {
+          // Load from localStorage
+          const stored = localStorage.getItem('customMaps')
+          if (stored) {
+            const allMaps: CustomMap[] = JSON.parse(stored)
+            const existingMap = allMaps.find(m => m.id === mapId)
+            if (existingMap) {
+              setMapName(existingMap.name)
+              setMapWidth(existingMap.width)
+              setMapHeight(existingMap.height)
+              setTiles(existingMap.tiles)
+              setPlayerSpawn(existingMap.playerSpawn)
+              setBasePosition(existingMap.basePosition)
+              setEnemySpawns(existingMap.enemySpawns)
+              setLoading(false)
+              return
+            }
+          }
+        }
       }
+      // Initialize empty map
+      initializeMap(13, 13)
+      setLoading(false)
     }
-    // Initialize empty map
-    initializeMap(13, 13)
-  }, [mapId])
+
+    loadMap()
+  }, [mapId, user, authLoading])
 
   // Initialize map
   const initializeMap = (width: number, height: number) => {
@@ -243,14 +275,14 @@ function MapEditorContent() {
   }
 
   // Save map
-  const saveMap = () => {
+  const saveMap = async () => {
     if (!mapName.trim()) {
       alert('请输入地图名称')
       return
     }
 
     const map: CustomMap = {
-      id: mapId || CustomMapStorage.generateId(),
+      id: mapId || generateId(),
       name: mapName,
       width: mapWidth,
       height: mapHeight,
@@ -260,7 +292,31 @@ function MapEditorContent() {
       enemySpawns,
     }
 
-    CustomMapStorage.saveMap(map)
+    if (user) {
+      // Save to database
+      if (mapId) {
+        // Update existing
+        await updateCustomMap(mapId, user.id, map)
+      } else {
+        // Save new
+        await saveCustomMap(user.id, map)
+      }
+    } else {
+      // Save to localStorage
+      const stored = localStorage.getItem('customMaps')
+      let allMaps: CustomMap[] = stored ? JSON.parse(stored) : []
+
+      if (mapId) {
+        // Update existing
+        allMaps = allMaps.map(m => m.id === mapId ? map : m)
+      } else {
+        // Add new
+        allMaps.push(map)
+      }
+
+      localStorage.setItem('customMaps', JSON.stringify(allMaps))
+    }
+
     router.push('/custom-maps')
   }
 
@@ -268,13 +324,31 @@ function MapEditorContent() {
     router.push('/custom-maps')
   }
 
+  // Generate unique ID for localStorage maps
+  const generateId = (): string => {
+    return 'map_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+  }
+
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">加载中...</div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-yellow-400">
-            {mapId ? '编辑地图' : '创建地图'}
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold text-yellow-400">
+              {mapId ? '编辑地图' : '创建地图'}
+            </h1>
+            {user && (
+              <p className="text-gray-400 text-sm">登录账号: {user.email}</p>
+            )}
+          </div>
           <button
             onClick={goBack}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
@@ -282,6 +356,14 @@ function MapEditorContent() {
             返回
           </button>
         </div>
+
+        {!user && (
+          <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-4">
+            <p className="text-yellow-400 text-sm">
+              您当前是游客模式。登录后可保存地图到云端，更换设备后也能继续使用。
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left panel - Settings */}

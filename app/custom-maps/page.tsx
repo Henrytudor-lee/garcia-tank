@@ -3,30 +3,60 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CustomMap, TileType } from '@/src/game/types'
-import { CustomMapStorage } from '@/src/game/CustomMapStorage'
+import { useAuth } from '@/src/lib/auth-context'
+import { getUserMaps, deleteCustomMap } from '@/src/lib/maps'
 
 export default function CustomMapsPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [maps, setMaps] = useState<CustomMap[]>([])
-  const [selectedMapId, setSelectedMapId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadMaps()
-  }, [])
-
-  const loadMaps = () => {
-    const storedMaps = CustomMapStorage.getMaps()
-    setMaps(storedMaps)
-  }
-
-  const deleteMap = (mapId: string) => {
-    if (confirm('确定要删除这个地图吗？')) {
-      CustomMapStorage.deleteMap(mapId)
+    if (!authLoading) {
       loadMaps()
     }
+  }, [user, authLoading])
+
+  const loadMaps = async () => {
+    if (user) {
+      // Load from database
+      const dbMaps = await getUserMaps(user.id)
+      setMaps(dbMaps)
+    } else {
+      // Load from localStorage
+      const stored = localStorage.getItem('customMaps')
+      if (stored) {
+        setMaps(JSON.parse(stored))
+      }
+    }
+    setLoading(false)
+  }
+
+  const deleteMap = async (mapId: string) => {
+    if (!confirm('确定要删除这个地图吗？')) return
+
+    if (user) {
+      // Delete from database
+      await deleteCustomMap(mapId, user.id)
+    } else {
+      // Delete from localStorage
+      const stored = localStorage.getItem('customMaps')
+      if (stored) {
+        const allMaps: CustomMap[] = JSON.parse(stored)
+        const filtered = allMaps.filter(m => m.id !== mapId)
+        localStorage.setItem('customMaps', JSON.stringify(filtered))
+      }
+    }
+    loadMaps()
   }
 
   const createNewMap = () => {
+    if (!user) {
+      alert('请先登录后才能创建自定义地图')
+      router.push('/login')
+      return
+    }
     router.push('/map-editor')
   }
 
@@ -49,11 +79,26 @@ export default function CustomMapsPage() {
     return count
   }
 
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">加载中...</div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-yellow-400">自定义地图</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-yellow-400">自定义地图</h1>
+            {user && (
+              <p className="text-gray-400 text-sm mt-1">
+                登录账号: {user.email}
+              </p>
+            )}
+          </div>
           <button
             onClick={goBack}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
@@ -61,6 +106,20 @@ export default function CustomMapsPage() {
             返回
           </button>
         </div>
+
+        {!user && (
+          <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-6">
+            <p className="text-yellow-400">
+              您当前是游客模式。登录后可保存地图到云端，更换设备后也能继续使用。
+            </p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+            >
+              登录
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-4 mb-6">
           <button

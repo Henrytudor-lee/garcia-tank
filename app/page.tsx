@@ -3,13 +3,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { GameEngine } from '@/src/game/GameEngine'
-import { CustomMap, LeaderboardEntry } from '@/src/game/types'
+import { CustomMap } from '@/src/game/types'
+import { useAuth } from '@/src/lib/auth-context'
+import { getUserMaps, saveCustomMap } from '@/src/lib/maps'
+import { addScore } from '@/src/lib/leaderboard'
 
 const TILE_SIZE = 40
 const DEFAULT_MAP_SIZE = 13
 
 export default function Home() {
   const router = useRouter()
+  const { user, signOut, loading: authLoading } = useAuth()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<GameEngine | null>(null)
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameover' | 'victory'>('menu')
@@ -24,12 +28,22 @@ export default function Home() {
   const [userIp, setUserIp] = useState('')
   const [userCountry, setUserCountry] = useState('')
 
+  // Load maps from database if logged in, otherwise from localStorage
   useEffect(() => {
-    // Load custom maps from localStorage
-    const storedMaps = localStorage.getItem('customMaps')
-    if (storedMaps) {
-      setCustomMaps(JSON.parse(storedMaps))
+    const loadMaps = async () => {
+      if (user) {
+        // Load from database
+        const dbMaps = await getUserMaps(user.id)
+        setCustomMaps(dbMaps)
+      } else {
+        // Load from localStorage
+        const storedMaps = localStorage.getItem('customMaps')
+        if (storedMaps) {
+          setCustomMaps(JSON.parse(storedMaps))
+        }
+      }
     }
+    loadMaps()
 
     // Get user IP and country
     fetch('http://ip-api.com/json/?fields=status,countryCode,query')
@@ -38,16 +52,13 @@ export default function Home() {
         if (data.status === 'success') {
           setUserIp(data.query || 'Unknown')
           setUserCountry(data.countryCode || '')
-        } else {
-          setUserIp('Unknown')
-          setUserCountry('')
         }
       })
       .catch(() => {
         setUserIp('Unknown')
         setUserCountry('')
       })
-  }, [])
+  }, [user])
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -77,34 +88,51 @@ export default function Home() {
     }
   }, [])
 
-  // Save score to leaderboard
-  const saveToLeaderboard = (finalScore: number, levelsCompleted: number, mapName?: string, mapId?: string) => {
-    const entry: LeaderboardEntry = {
-      score: finalScore,
-      date: Date.now(),
-      levelsCompleted,
-      ip: userIp,
-      country: userCountry,
-      mapId: mapId,
-      mapName: mapName || '默认地图'
+  // Save score to leaderboard (database if logged in, localStorage otherwise)
+  const saveToLeaderboard = async (finalScore: number, levelsCompleted: number, mapName?: string, mapId?: string) => {
+    if (user) {
+      // Save to database
+      await addScore(finalScore, levelsCompleted, {
+        userId: user.id,
+        mapId,
+        mapName: mapName || '默认地图',
+        ipAddress: userIp,
+        country: userCountry,
+      })
+    } else {
+      // Save to localStorage
+      const entry = {
+        score: finalScore,
+        date: Date.now(),
+        levelsCompleted,
+        ip: userIp,
+        country: userCountry,
+        mapId,
+        mapName: mapName || '默认地图'
+      }
+      const stored = localStorage.getItem('leaderboard')
+      let leaderboard: any[] = stored ? JSON.parse(stored) : []
+      leaderboard.push(entry)
+      leaderboard.sort((a, b) => b.score - a.score)
+      leaderboard = leaderboard.slice(0, 10)
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard))
     }
-    const stored = localStorage.getItem('leaderboard')
-    let leaderboard: LeaderboardEntry[] = stored ? JSON.parse(stored) : []
-    leaderboard.push(entry)
-    leaderboard.sort((a, b) => b.score - a.score)
-    leaderboard = leaderboard.slice(0, 10) // Keep top 10
-    localStorage.setItem('leaderboard', JSON.stringify(leaderboard))
   }
 
-  const startGame = (customMap?: CustomMap) => {
+  const startGame = async (customMap?: CustomMap) => {
     if (gameRef.current) {
-      // Set canvas size based on map
       const mapSize = customMap ? Math.max(customMap.width, customMap.height) : DEFAULT_MAP_SIZE
       const newSize = mapSize * TILE_SIZE
       setCanvasSize(newSize)
 
-      // Set current map info
       if (customMap) {
+        // If logged in and it's a new map (no id), save to database
+        if (user && !customMap.id) {
+          const mapId = await saveCustomMap(user.id, customMap)
+          if (mapId) {
+            customMap.id = mapId
+          }
+        }
         setCurrentMapName(customMap.name)
         setCurrentMapId(customMap.id)
         gameRef.current.startWithCustomMap(customMap, newSize)
@@ -129,6 +157,11 @@ export default function Home() {
   }
 
   const goToCustomMaps = () => {
+    if (!user) {
+      alert('请先登录后才能创建和管理自定义地图')
+      router.push('/login')
+      return
+    }
     router.push('/custom-maps')
   }
 
@@ -143,8 +176,48 @@ export default function Home() {
     setGameState('menu')
   }
 
+  const handleSignOut = async () => {
+    await signOut()
+  }
+
+  if (authLoading) {
+    return (
+      <main className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">加载中...</div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black">
+      {/* User info bar */}
+      <div className="w-full max-w-lg flex justify-between items-center text-white px-4 py-2 bg-gray-800/50 mb-2">
+        <div>
+          {user ? (
+            <span className="text-green-400">欢迎, {user.email}</span>
+          ) : (
+            <span className="text-gray-400">游客模式</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {user ? (
+            <button
+              onClick={handleSignOut}
+              className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 rounded"
+            >
+              退出登录
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push('/login')}
+              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded"
+            >
+              登录
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="relative">
         {/* Game Header */}
         <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4">
@@ -173,7 +246,7 @@ export default function Home() {
               坦克大战
             </h1>
             <p className="text-gray-400 mb-2">WASD / 方向键 移动</p>
-            <p className="text-gray-400 mb-8">空格键 射击</p>
+            <p className="text-gray-400 mb-8">空格键 射击 | P键 暂停</p>
 
             <div className="flex flex-col gap-4">
               <button

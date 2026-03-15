@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LeaderboardEntry, CustomMap } from '@/src/game/types'
+import { useAuth } from '@/src/lib/auth-context'
+import { getLeaderboard } from '@/src/lib/leaderboard'
+import type { CustomMap } from '@/src/game/types'
 
 // Country code to flag emoji mapping
 const countryFlags: Record<string, string> = {
@@ -29,34 +31,78 @@ const countryFlags: Record<string, string> = {
   TW: '🇹🇼',
 }
 
+interface LeaderboardEntry {
+  id?: string
+  score: number
+  date: number
+  levelsCompleted?: number
+  mapId?: string
+  mapName?: string
+  ip?: string
+  ipAddress?: string
+  country?: string
+  userId?: string
+  username?: string
+}
+
 export default function LeaderboardPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [filteredEntries, setFilteredEntries] = useState<LeaderboardEntry[]>([])
   const [customMaps, setCustomMaps] = useState<CustomMap[]>([])
   const [selectedMap, setSelectedMap] = useState<string>('all')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadLeaderboard()
-    loadCustomMaps()
-  }, [])
+    if (!authLoading) {
+      loadData()
+    }
+  }, [user, authLoading])
 
   useEffect(() => {
     filterEntries()
   }, [entries, selectedMap])
 
-  const loadLeaderboard = () => {
-    const stored = localStorage.getItem('leaderboard')
-    if (stored) {
-      setEntries(JSON.parse(stored))
-    }
-  }
+  const loadData = async () => {
+    setLoading(true)
 
-  const loadCustomMaps = () => {
-    const stored = localStorage.getItem('customMaps')
-    if (stored) {
-      setCustomMaps(JSON.parse(stored))
+    if (user) {
+      // Load from database
+      const dbEntries = await getLeaderboard(50)
+      const formattedEntries: LeaderboardEntry[] = dbEntries.map(e => ({
+        id: e.id,
+        score: e.score,
+        date: new Date(e.created_at).getTime(),
+        levelsCompleted: e.levels_completed,
+        mapId: e.map_id || undefined,
+        mapName: e.map_name || '默认地图',
+        ipAddress: e.ip_address || undefined,
+        country: e.country || undefined,
+        userId: e.user_id || undefined,
+        username: e.username || undefined,
+      }))
+      setEntries(formattedEntries)
+
+      // Load custom maps for filter
+      const { getUserMaps } = await import('@/src/lib/maps')
+      const maps = await getUserMaps(user.id)
+      setCustomMaps(maps)
+    } else {
+      // Load from localStorage
+      const stored = localStorage.getItem('leaderboard')
+      if (stored) {
+        setEntries(JSON.parse(stored))
+      }
+
+      // Load custom maps from localStorage
+      const storedMaps = localStorage.getItem('customMaps')
+      if (storedMaps) {
+        setCustomMaps(JSON.parse(storedMaps))
+      }
     }
+
+    setLoading(false)
   }
 
   const filterEntries = () => {
@@ -69,8 +115,13 @@ export default function LeaderboardPage() {
     }
   }
 
-  const clearLeaderboard = () => {
-    if (confirm('确定要清空排行榜吗？')) {
+  const clearLeaderboard = async () => {
+    if (!confirm('确定要清空排行榜吗？')) return
+
+    if (user) {
+      // Note: In production, you'd want a server-side function to clear
+      alert('请联系管理员清空云端排行榜')
+    } else {
       localStorage.removeItem('leaderboard')
       setEntries([])
     }
@@ -95,11 +146,26 @@ export default function LeaderboardPage() {
     return countryFlags[countryCode?.toUpperCase()] || '🌍'
   }
 
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">加载中...</div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-yellow-400">排行榜</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-yellow-400">排行榜</h1>
+            {user && (
+              <p className="text-gray-400 text-sm mt-1">
+                登录账号: {user.email}
+              </p>
+            )}
+          </div>
           <button
             onClick={goBack}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
@@ -108,8 +174,22 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
+        {!user && (
+          <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-6">
+            <p className="text-yellow-400">
+              您当前是游客模式，只显示本地排行榜。登录后可参与全球排行榜！
+            </p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+            >
+              登录
+            </button>
+          </div>
+        )}
+
         {/* Map Filter */}
-        <div className="mb-4 flex items-center gap-4">
+        <div className="mb-4 flex items-center gap-4 flex-wrap">
           <label className="text-gray-400">筛选地图:</label>
           <select
             value={selectedMap}
@@ -149,7 +229,7 @@ export default function LeaderboardPage() {
                 <tbody>
                   {filteredEntries.map((entry, index) => (
                     <tr
-                      key={index}
+                      key={entry.id || index}
                       className={`border-t border-gray-700 ${
                         index === 0 ? 'bg-yellow-900/30' :
                         index === 1 ? 'bg-gray-600/50' :
@@ -178,7 +258,7 @@ export default function LeaderboardPage() {
                         </span>
                       </td>
                       <td className="px-2 py-3 text-center text-gray-400 text-sm hidden md:table-cell">
-                        {entry.ip || 'Unknown'}
+                        {entry.ip || entry.ipAddress || 'Unknown'}
                       </td>
                       <td className="px-2 py-3 text-right text-gray-400 text-sm hidden lg:table-cell">
                         {formatDate(entry.date)}
