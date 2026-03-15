@@ -1,0 +1,205 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { LeaderboardEntry, CustomMap } from '@/src/game/types'
+
+// Country code to flag emoji mapping
+const countryFlags: Record<string, string> = {
+  CN: '🇨🇳',
+  US: '🇺🇸',
+  JP: '🇯🇵',
+  KR: '🇰🇷',
+  GB: '🇬🇧',
+  DE: '🇩🇪',
+  FR: '🇫🇷',
+  RU: '🇷🇺',
+  IN: '🇮🇳',
+  BR: '🇧🇷',
+  CA: '🇨🇦',
+  AU: '🇦🇺',
+  IT: '🇮🇹',
+  ES: '🇪🇸',
+  MX: '🇲🇽',
+  ID: '🇮🇩',
+  TH: '🇹🇭',
+  VN: '🇻🇳',
+  SG: '🇸🇬',
+  HK: '🇭🇰',
+  TW: '🇹🇼',
+}
+
+export default function LeaderboardPage() {
+  const router = useRouter()
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
+  const [filteredEntries, setFilteredEntries] = useState<LeaderboardEntry[]>([])
+  const [customMaps, setCustomMaps] = useState<CustomMap[]>([])
+  const [selectedMap, setSelectedMap] = useState<string>('all')
+
+  useEffect(() => {
+    loadLeaderboard()
+    loadCustomMaps()
+  }, [])
+
+  useEffect(() => {
+    filterEntries()
+  }, [entries, selectedMap])
+
+  const loadLeaderboard = () => {
+    const stored = localStorage.getItem('leaderboard')
+    if (stored) {
+      setEntries(JSON.parse(stored))
+    }
+  }
+
+  const loadCustomMaps = () => {
+    const stored = localStorage.getItem('customMaps')
+    if (stored) {
+      setCustomMaps(JSON.parse(stored))
+    }
+  }
+
+  const filterEntries = () => {
+    if (selectedMap === 'all') {
+      setFilteredEntries(entries)
+    } else if (selectedMap === 'default') {
+      setFilteredEntries(entries.filter(e => !e.mapId || e.mapName === '默认地图'))
+    } else {
+      setFilteredEntries(entries.filter(e => e.mapId === selectedMap))
+    }
+  }
+
+  const clearLeaderboard = () => {
+    if (confirm('确定要清空排行榜吗？')) {
+      localStorage.removeItem('leaderboard')
+      setEntries([])
+    }
+  }
+
+  const goBack = () => {
+    router.push('/')
+  }
+
+  const formatDate = (timestamp: number): string => {
+    const date = new Date(timestamp)
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getFlag = (countryCode: string): string => {
+    return countryFlags[countryCode?.toUpperCase()] || '🌍'
+  }
+
+  return (
+    <main className="min-h-screen bg-black text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-yellow-400">排行榜</h1>
+          <button
+            onClick={goBack}
+            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+          >
+            返回
+          </button>
+        </div>
+
+        {/* Map Filter */}
+        <div className="mb-4 flex items-center gap-4">
+          <label className="text-gray-400">筛选地图:</label>
+          <select
+            value={selectedMap}
+            onChange={(e) => setSelectedMap(e.target.value)}
+            className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
+          >
+            <option value="all">全部地图</option>
+            <option value="default">默认地图</option>
+            {customMaps.map(map => (
+              <option key={map.id} value={map.id}>{map.name}</option>
+            ))}
+          </select>
+          <span className="text-gray-400 text-sm">
+            共 {filteredEntries.length} 条记录
+          </span>
+        </div>
+
+        {filteredEntries.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-xl mb-4">暂无记录</p>
+            <p>开始游戏来创造你的最高分吧！</p>
+          </div>
+        ) : (
+          <>
+            <div className="bg-gray-800 rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-700">
+                    <th className="px-2 py-3 text-left w-16">排名</th>
+                    <th className="px-2 py-3 text-right">分数</th>
+                    <th className="px-2 py-3 text-center w-24">地图</th>
+                    <th className="px-2 py-3 text-center w-32">地区</th>
+                    <th className="px-2 py-3 text-center hidden md:table-cell">IP</th>
+                    <th className="px-2 py-3 text-right hidden lg:table-cell">日期</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEntries.map((entry, index) => (
+                    <tr
+                      key={index}
+                      className={`border-t border-gray-700 ${
+                        index === 0 ? 'bg-yellow-900/30' :
+                        index === 1 ? 'bg-gray-600/50' :
+                        index === 2 ? 'bg-orange-900/30' : ''
+                      }`}
+                    >
+                      <td className="px-2 py-3">
+                        <span className="flex items-center gap-1">
+                          {index === 0 && '🥇'}
+                          {index === 1 && '🥈'}
+                          {index === 2 && '🥉'}
+                          {index > 2 && `#${index + 1}`}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3 text-right font-bold text-yellow-400">
+                        {entry.score.toLocaleString()}
+                      </td>
+                      <td className="px-2 py-3 text-center text-sm">
+                        <span className="px-2 py-1 bg-gray-700 rounded text-gray-300">
+                          {entry.mapName || '默认地图'}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3 text-center">
+                        <span className="text-xl" title={entry.country || 'Unknown'}>
+                          {getFlag(entry.country || '')}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3 text-center text-gray-400 text-sm hidden md:table-cell">
+                        {entry.ip || 'Unknown'}
+                      </td>
+                      <td className="px-2 py-3 text-right text-gray-400 text-sm hidden lg:table-cell">
+                        {formatDate(entry.date)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={clearLeaderboard}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded"
+              >
+                清空排行榜
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
+  )
+}
