@@ -29,6 +29,7 @@ export class GameEngine {
   private playerId: string | null = null
   private events: Map<string, GameEventCallback[]> = new Map()
   private lastPlayerFireCheck: number = 0
+  private pauseKeyWasPressed: boolean = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -161,12 +162,19 @@ export class GameEngine {
 
   // Main update loop
   private update(deltaTime: number) {
-    if (this.gameState === GameState.PLAYING) {
-      // Check for pause key
-      if (this.inputManager.isPausePressed()) {
+    // Handle pause/resume with P key (only toggle once per key press)
+    const isPausePressed = this.inputManager.isPausePressed()
+    if (isPausePressed && !this.pauseKeyWasPressed) {
+      this.pauseKeyWasPressed = true
+      if (this.gameState === GameState.PLAYING) {
         this.pause()
         return
+      } else if (this.gameState === GameState.PAUSED) {
+        this.resume()
+        return
       }
+    } else if (!isPausePressed) {
+      this.pauseKeyWasPressed = false
     }
 
     if (this.gameState !== GameState.PLAYING) return
@@ -198,20 +206,17 @@ export class GameEngine {
   // Update player
   private updatePlayer() {
     if (!this.playerId) {
-      console.log('No player ID')
       return
     }
 
     const player = this.tankSystem.getPlayer()
     if (!player) {
-      console.log('No player tank')
       return
     }
 
     // Get movement direction
     const direction = this.inputManager.getMovementDirection()
     if (direction !== null) {
-      console.log('Moving player in direction:', direction, 'position:', player.position)
       this.tankSystem.moveTank(player.id, direction)
     } else {
       player.isMoving = false
@@ -442,6 +447,7 @@ export class GameEngine {
   pause() {
     if (this.gameState === GameState.PLAYING) {
       this.gameState = GameState.PAUSED
+      this.gameLoop.stop()
       this.emit('stateChange', this.gameState)
     }
   }
@@ -450,6 +456,7 @@ export class GameEngine {
   resume() {
     if (this.gameState === GameState.PAUSED) {
       this.gameState = GameState.PLAYING
+      this.gameLoop.start()
       this.emit('stateChange', this.gameState)
     }
   }
