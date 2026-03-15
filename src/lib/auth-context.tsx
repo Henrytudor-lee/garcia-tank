@@ -1,8 +1,13 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { User, Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+
+interface User {
+  id: string
+  email: string
+  username: string
+}
 
 interface AuthContextType {
   user: User | null
@@ -28,59 +33,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Load user from localStorage on mount
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
+    const storedUser = localStorage.getItem('tank_user')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+    setLoading(false)
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error: error?.message || null }
+    // Query users table directly
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('password', password)
+      .single()
+
+    if (error || !data) {
+      return { error: '邮箱或密码错误' }
+    }
+
+    // Store user in localStorage
+    const userData: User = {
+      id: data.id,
+      email: data.email,
+      username: data.username,
+    }
+    localStorage.setItem('tank_user', JSON.stringify(userData))
+    setUser(userData)
+
+    return { error: null }
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    // Check if email already exists
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
 
-    if (error) {
-      return { error: error.message }
+    if (existing) {
+      return { error: '该邮箱已被注册' }
     }
 
-    if (data.user) {
-      // Create user profile
-      const { error: profileError } = await supabase.from('users').insert({
-        id: data.user.id,
+    // Generate UUID
+    const userId = crypto.randomUUID()
+
+    // Insert directly into users table
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
         email,
         username,
+        password,
+        role: 'user',
+        status: 'active',
       })
 
-      if (profileError) {
-        return { error: profileError.message }
-      }
+    if (insertError) {
+      return { error: insertError.message }
     }
+
+    // Store user in localStorage
+    const userData: User = {
+      id: userId,
+      email,
+      username,
+    }
+    localStorage.setItem('tank_user', JSON.stringify(userData))
+    setUser(userData)
 
     return { error: null }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    localStorage.removeItem('tank_user')
+    setUser(null)
   }
 
   return (
