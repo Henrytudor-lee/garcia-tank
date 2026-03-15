@@ -68,46 +68,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    // Check if email already exists
-    const { data: existing } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single()
+    try {
+      // Check if email already exists
+      const { data: existing, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single()
 
-    if (existing) {
-      return { error: '该邮箱已被注册' }
-    }
+      if (checkError && !checkError.message.includes('No rows')) {
+        console.error('Check error:', checkError)
+      }
 
-    // Generate UUID
-    const userId = crypto.randomUUID()
+      if (existing) {
+        return { error: '该邮箱已被注册' }
+      }
 
-    // Insert directly into users table
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
+      // Generate UUID
+      const userId = crypto.randomUUID()
+
+      // Insert directly into users table
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email,
+          username,
+          password,
+          role: 'user',
+          status: 'active',
+        })
+
+      if (insertError) {
+        console.error('Insert error:', insertError)
+        return { error: insertError.message }
+      }
+
+      // Store user in localStorage
+      const userData: User = {
         id: userId,
         email,
         username,
-        password,
-        role: 'user',
-        status: 'active',
-      })
+      }
+      localStorage.setItem('tank_user', JSON.stringify(userData))
+      setUser(userData)
 
-    if (insertError) {
-      return { error: insertError.message }
+      return { error: null }
+    } catch (err) {
+      console.error('Signup exception:', err)
+      return { error: '注册失败，请稍后重试' }
     }
-
-    // Store user in localStorage
-    const userData: User = {
-      id: userId,
-      email,
-      username,
-    }
-    localStorage.setItem('tank_user', JSON.stringify(userData))
-    setUser(userData)
-
-    return { error: null }
   }
 
   const signOut = async () => {
