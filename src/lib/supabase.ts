@@ -40,13 +40,11 @@ export interface DbCustomMap {
 export interface DbLeaderboard {
   id: string
   user_id: string | null
+  email: string | null
   score: number
   levels_completed: number
   map_id: string | null
   map_name: string | null
-  ip_address: string | null
-  country: string | null
-  country_name: string | null
   created_at: string
   username?: string
   avatar?: string

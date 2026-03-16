@@ -12,7 +12,7 @@ This is a **Battle City (坦克大战) 2D tank battle game** web remake built wi
 - **Language**: TypeScript
 - **Styling**: TailwindCSS
 - **Database**: Supabase (PostgreSQL)
-- **Testing**: Playwright
+- **Testing**: Playwright (devDependency installed, config pending)
 
 ## Commands
 

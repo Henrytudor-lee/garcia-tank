@@ -25,15 +25,11 @@ export default function Home() {
   const [canvasSize, setCanvasSize] = useState(DEFAULT_MAP_SIZE * TILE_SIZE)
   const [currentMapName, setCurrentMapName] = useState('默认地图')
   const [currentMapId, setCurrentMapId] = useState<string | undefined>(undefined)
-  const [userIp, setUserIp] = useState('')
-  const [userCountry, setUserCountry] = useState('')
 
   // Use refs to store current values for callbacks
   const scoreRef = useRef(0)
   const levelRef = useRef(1)
   const userRef = useRef(user)
-  const userIpRef = useRef('')
-  const userCountryRef = useRef('')
   const currentMapNameRef = useRef('默认地图')
   const currentMapIdRef = useRef<string | undefined>(undefined)
 
@@ -49,14 +45,6 @@ export default function Home() {
   useEffect(() => {
     userRef.current = user
   }, [user])
-
-  useEffect(() => {
-    userIpRef.current = userIp
-  }, [userIp])
-
-  useEffect(() => {
-    userCountryRef.current = userCountry
-  }, [userCountry])
 
   useEffect(() => {
     currentMapNameRef.current = currentMapName
@@ -82,20 +70,6 @@ export default function Home() {
       }
     }
     loadMaps()
-
-    // Get user IP and country
-    fetch('https://ip-api.com/json/?fields=status,countryCode,query')
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') {
-          setUserIp(data.query || 'Unknown')
-          setUserCountry(data.countryCode || '')
-        }
-      })
-      .catch(() => {
-        setUserIp('Unknown')
-        setUserCountry('')
-      })
   }, [user])
 
   useEffect(() => {
@@ -140,10 +114,9 @@ export default function Home() {
         score: finalScore,
         date: Date.now(),
         levelsCompleted,
-        ip: userIpRef.current,
-        country: userCountryRef.current,
         mapId,
-        mapName: mapName || '默认地图'
+        mapName: mapName || '默认地图',
+        email: userRef.current?.email || null
       }
       const stored = localStorage.getItem('leaderboard')
       let leaderboard: any[] = stored ? JSON.parse(stored) : []
@@ -159,10 +132,9 @@ export default function Home() {
       console.log('Saving to database, userId:', userRef.current.id)
       const result = await addScore(finalScore, levelsCompleted, {
         userId: userRef.current.id,
+        email: userRef.current.email,
         mapId,
         mapName: mapName || '默认地图',
-        ipAddress: userIpRef.current,
-        country: userCountryRef.current,
       })
       console.log('addScore result:', result)
       // If database save failed (e.g., session expired), fallback to localStorage

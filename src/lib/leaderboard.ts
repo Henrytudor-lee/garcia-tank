@@ -39,14 +39,12 @@ export async function addScore(
   levelsCompleted: number,
   options: {
     userId?: string
+    email?: string
     mapId?: string
     mapName?: string
-    ipAddress?: string
-    country?: string
-    countryName?: string
   }
 ): Promise<boolean> {
-  console.log('addScore - userId:', options.userId)
+  console.log('addScore - userId:', options.userId, 'email:', options.email)
 
   // Use the provided userId directly (trusted from login)
   const userIdToUse = options.userId || null
@@ -55,13 +53,11 @@ export async function addScore(
     .from('leaderboard')
     .insert({
       user_id: userIdToUse,
+      email: options.email || null,
       score,
       levels_completed: levelsCompleted,
       map_id: options.mapId || null,
       map_name: options.mapName || '默认地图',
-      ip_address: options.ipAddress || null,
-      country: options.country || null,
-      country_name: options.countryName || null,
     })
 
   if (error) {

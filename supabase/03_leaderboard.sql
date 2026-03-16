@@ -4,13 +4,11 @@
 CREATE TABLE public.leaderboard (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES public.users(id) ON DELETE SET NULL, -- 可选的关联用户，未登录时为空
+  email TEXT, -- 用户邮箱
   score INTEGER NOT NULL,
   levels_completed INTEGER NOT NULL DEFAULT 1,
   map_id UUID REFERENCES public.custom_maps(id) ON DELETE SET NULL, -- 使用的地图ID
   map_name TEXT, -- 地图名称（冗余存储，方便查询）
-  ip_address TEXT, -- IP地址
-  country TEXT, -- 国家代码
-  country_name TEXT, -- 国家名称
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -42,8 +40,7 @@ SELECT
   l.score,
   l.levels_completed,
   l.map_name,
-  l.country,
-  l.country_name,
+  l.email,
   l.created_at,
   u.username,
   u.avatar

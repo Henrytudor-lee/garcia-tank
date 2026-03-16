@@ -6,30 +6,6 @@ import { useAuth } from '@/src/lib/auth-context'
 import { getLeaderboard } from '@/src/lib/leaderboard'
 import type { CustomMap } from '@/src/game/types'
 
-// Country code to flag emoji mapping
-const countryFlags: Record<string, string> = {
-  CN: '🇨🇳',
-  US: '🇺🇸',
-  JP: '🇯🇵',
-  KR: '🇰🇷',
-  GB: '🇬🇧',
-  DE: '🇩🇪',
-  FR: '🇫🇷',
-  RU: '🇷🇺',
-  IN: '🇮🇳',
-  BR: '🇧🇷',
-  CA: '🇨🇦',
-  AU: '🇦🇺',
-  IT: '🇮🇹',
-  ES: '🇪🇸',
-  MX: '🇲🇽',
-  ID: '🇮🇩',
-  TH: '🇹🇭',
-  VN: '🇻🇳',
-  SG: '🇸🇬',
-  HK: '🇭🇰',
-  TW: '🇹🇼',
-}
 
 interface LeaderboardEntry {
   id?: string
@@ -38,9 +14,7 @@ interface LeaderboardEntry {
   levelsCompleted?: number
   mapId?: string
   mapName?: string
-  ip?: string
-  ipAddress?: string
-  country?: string
+  email?: string
   userId?: string
   username?: string
 }
@@ -88,8 +62,7 @@ export default function LeaderboardPage() {
       levelsCompleted: e.levels_completed,
       mapId: e.map_id || undefined,
       mapName: e.map_name || '默认地图',
-      ipAddress: e.ip_address || undefined,
-      country: e.country || undefined,
+      email: e.email || undefined,
       userId: e.user_id || undefined,
       username: e.username || undefined,
     }))
@@ -156,10 +129,6 @@ export default function LeaderboardPage() {
       hour: '2-digit',
       minute: '2-digit'
     })
-  }
-
-  const getFlag = (countryCode: string): string => {
-    return countryFlags[countryCode?.toUpperCase()] || '🌍'
   }
 
   if (authLoading || loading) {
@@ -239,8 +208,7 @@ export default function LeaderboardPage() {
                     <th className="px-2 py-3 text-left w-16">排名</th>
                     <th className="px-2 py-3 text-right">分数</th>
                     <th className="px-2 py-3 text-center w-24">地图</th>
-                    <th className="px-2 py-3 text-center w-32">地区</th>
-                    <th className="px-2 py-3 text-center hidden md:table-cell">IP</th>
+                    <th className="px-2 py-3 text-center w-48">邮箱</th>
                     <th className="px-2 py-3 text-right hidden lg:table-cell">日期</th>
                   </tr>
                 </thead>
@@ -270,13 +238,8 @@ export default function LeaderboardPage() {
                           {entry.mapName || '默认地图'}
                         </span>
                       </td>
-                      <td className="px-2 py-3 text-center">
-                        <span className="text-xl" title={entry.country || 'Unknown'}>
-                          {getFlag(entry.country || '')}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-center text-gray-400 text-sm hidden md:table-cell">
-                        {entry.ip || entry.ipAddress || 'Unknown'}
+                      <td className="px-2 py-3 text-center text-gray-300 text-sm">
+                        {entry.email || '游客'}
                       </td>
                       <td className="px-2 py-3 text-right text-gray-400 text-sm hidden lg:table-cell">
                         {formatDate(entry.date)}
