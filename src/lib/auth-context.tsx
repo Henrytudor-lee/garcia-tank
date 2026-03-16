@@ -33,94 +33,150 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Load user from localStorage on mount
+  // Initialize auth state - optimized for fast initial render
   useEffect(() => {
+    // First, check for legacy user in localStorage immediately (synchronous)
     const storedUser = localStorage.getItem('tank_user')
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      try {
+        const parsed = JSON.parse(storedUser)
+        if (parsed.isLegacy) {
+          setUser({
+            id: parsed.id,
+            email: parsed.email,
+            username: parsed.username,
+          })
+        }
+      } catch (e) {
+        console.error('Error parsing stored user:', e)
+      }
     }
+
+    // Set loading to false after checking localStorage
     setLoading(false)
+
+    // Then check Supabase auth in background
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUserProfile(session.user.id, session.user.email!)
+      }
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await fetchUserProfile(session.user.id, session.user.email!)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    // Query users table directly
+  // Fetch user profile from users table
+  const fetchUserProfile = async (userId: string, email: string) => {
     const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user profile:', error)
+      return
+    }
+
+    setUser({
+      id: userId,
+      email: email,
+      username: data.username || email.split('@')[0],
+    })
+  }
+
+  const signIn = async (email: string, password: string) => {
+    // First try Supabase auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    // If Supabase auth succeeded
+    if (!authError && authData.user) {
+      return { error: null }
+    }
+
+    // Supabase auth failed, try legacy login (users table)
+    console.log('Supabase auth failed, trying legacy login:', authError?.message)
+
+    // Query users table directly
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .eq('password', password)
       .single()
 
-    if (error || !data) {
+    if (userError || !userData) {
       return { error: '邮箱或密码错误' }
     }
 
-    // Store user in localStorage
-    const userData: User = {
-      id: data.id,
-      email: data.email,
-      username: data.username,
-    }
-    localStorage.setItem('tank_user', JSON.stringify(userData))
-    setUser(userData)
+    // For legacy users, set user directly in state
+    setUser({
+      id: userData.id,
+      email: userData.email,
+      username: userData.username,
+    })
+    // Store in localStorage for persistence
+    localStorage.setItem('tank_user', JSON.stringify({
+      id: userData.id,
+      email: userData.email,
+      username: userData.username,
+      isLegacy: true
+    }))
 
     return { error: null }
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    try {
-      // Check if email already exists
-      const { data: existing, error: checkError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single()
+    // Use Supabase auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
 
-      if (checkError && !checkError.message.includes('No rows')) {
-        console.error('Check error:', checkError)
-      }
+    if (error) {
+      return { error: error.message }
+    }
 
-      if (existing) {
-        return { error: '该邮箱已被注册' }
-      }
+    if (!data.user) {
+      return { error: '注册失败' }
+    }
 
-      // Generate UUID
-      const userId = crypto.randomUUID()
-
-      // Insert directly into users table
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email,
-          username,
-          password,
-          role: 'user',
-          status: 'active',
-        })
-
-      if (insertError) {
-        console.error('Insert error:', insertError)
-        return { error: insertError.message }
-      }
-
-      // Store user in localStorage
-      const userData: User = {
-        id: userId,
+    // Create user profile in users table
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: data.user.id,
         email,
         username,
-      }
-      localStorage.setItem('tank_user', JSON.stringify(userData))
-      setUser(userData)
+        password,
+        role: 'user',
+        status: 'active',
+      })
 
-      return { error: null }
-    } catch (err) {
-      console.error('Signup exception:', err)
-      return { error: '注册失败，请稍后重试' }
+    if (profileError) {
+      console.error('Error creating user profile:', profileError)
+      return { error: profileError.message }
     }
+
+    return { error: null }
   }
 
   const signOut = async () => {
+    // Try Supabase signOut
+    await supabase.auth.signOut()
+    // Also clear legacy user
     localStorage.removeItem('tank_user')
     setUser(null)
   }

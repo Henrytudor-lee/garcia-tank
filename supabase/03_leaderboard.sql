@@ -22,10 +22,13 @@ CREATE POLICY "Public can read leaderboard"
   ON public.leaderboard FOR SELECT
   USING (true);
 
--- 只有已登录用户可以插入自己的成绩
+-- 只有有效用户可以插入自己的成绩（user_id存在于users表中，或者匿名）
 CREATE POLICY "Users can insert own score"
   ON public.leaderboard FOR INSERT
-  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+  WITH CHECK (
+    user_id IN (SELECT id FROM public.users WHERE id = user_id)
+    OR user_id IS NULL
+  );
 
 -- 索引优化
 CREATE INDEX idx_leaderboard_score ON public.leaderboard(score DESC);

@@ -54,11 +54,23 @@ export default function LeaderboardPage() {
   const [selectedMap, setSelectedMap] = useState<string>('all')
   const [loading, setLoading] = useState(true)
 
+  // Check if user is a legacy user - do this synchronously
+  const isLegacyUser = (() => {
+    if (!user) return false
+    const storedUser = localStorage.getItem('tank_user')
+    if (!storedUser) return false
+    try {
+      return JSON.parse(storedUser).isLegacy === true
+    } catch {
+      return false
+    }
+  })()
+
   useEffect(() => {
     if (!authLoading) {
       loadData()
     }
-  }, [user, authLoading])
+  }, [user, authLoading, isLegacyUser])
 
   useEffect(() => {
     filterEntries()
@@ -67,29 +79,33 @@ export default function LeaderboardPage() {
   const loadData = async () => {
     setLoading(true)
 
-    if (user) {
-      // Load from database
-      const dbEntries = await getLeaderboard(50)
-      const formattedEntries: LeaderboardEntry[] = dbEntries.map(e => ({
-        id: e.id,
-        score: e.score,
-        date: new Date(e.created_at).getTime(),
-        levelsCompleted: e.levels_completed,
-        mapId: e.map_id || undefined,
-        mapName: e.map_name || '默认地图',
-        ipAddress: e.ip_address || undefined,
-        country: e.country || undefined,
-        userId: e.user_id || undefined,
-        username: e.username || undefined,
-      }))
+    // Always try to load from database first
+    const dbEntries = await getLeaderboard(50)
+    const formattedEntries: LeaderboardEntry[] = dbEntries.map(e => ({
+      id: e.id,
+      score: e.score,
+      date: new Date(e.created_at).getTime(),
+      levelsCompleted: e.levels_completed,
+      mapId: e.map_id || undefined,
+      mapName: e.map_name || '默认地图',
+      ipAddress: e.ip_address || undefined,
+      country: e.country || undefined,
+      userId: e.user_id || undefined,
+      username: e.username || undefined,
+    }))
+
+    // If database has entries, use them
+    if (formattedEntries.length > 0) {
       setEntries(formattedEntries)
 
-      // Load custom maps for filter
-      const { getUserMaps } = await import('@/src/lib/maps')
-      const maps = await getUserMaps(user.id)
-      setCustomMaps(maps)
+      // Load custom maps for filter if user is logged in
+      if (user) {
+        const { getUserMaps } = await import('@/src/lib/maps')
+        const maps = await getUserMaps(user.id)
+        setCustomMaps(maps)
+      }
     } else {
-      // Load from localStorage
+      // Fallback to localStorage if database is empty
       const stored = localStorage.getItem('leaderboard')
       if (stored) {
         setEntries(JSON.parse(stored))
@@ -174,17 +190,19 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {!user && (
+        {(!user || isLegacyUser) && (
           <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-6">
             <p className="text-yellow-400">
-              您当前是游客模式，只显示本地排行榜。登录后可参与全球排行榜！
+              {isLegacyUser ? '您当前是本地登录模式，只显示本地排行榜。' : '您当前是游客模式，只显示本地排行榜。登录后可参与全球排行榜！'}
             </p>
-            <button
-              onClick={() => router.push('/login')}
-              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
-            >
-              登录
-            </button>
+            {!isLegacyUser && (
+              <button
+                onClick={() => router.push('/login')}
+                className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+              >
+                登录
+              </button>
+            )}
           </div>
         )}
 

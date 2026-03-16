@@ -28,6 +28,44 @@ export default function Home() {
   const [userIp, setUserIp] = useState('')
   const [userCountry, setUserCountry] = useState('')
 
+  // Use refs to store current values for callbacks
+  const scoreRef = useRef(0)
+  const levelRef = useRef(1)
+  const userRef = useRef(user)
+  const userIpRef = useRef('')
+  const userCountryRef = useRef('')
+  const currentMapNameRef = useRef('默认地图')
+  const currentMapIdRef = useRef<string | undefined>(undefined)
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    scoreRef.current = score
+  }, [score])
+
+  useEffect(() => {
+    levelRef.current = level
+  }, [level])
+
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+
+  useEffect(() => {
+    userIpRef.current = userIp
+  }, [userIp])
+
+  useEffect(() => {
+    userCountryRef.current = userCountry
+  }, [userCountry])
+
+  useEffect(() => {
+    currentMapNameRef.current = currentMapName
+  }, [currentMapName])
+
+  useEffect(() => {
+    currentMapIdRef.current = currentMapId
+  }, [currentMapId])
+
   // Load maps from database if logged in, otherwise from localStorage
   useEffect(() => {
     const loadMaps = async () => {
@@ -66,18 +104,22 @@ export default function Home() {
     const game = new GameEngine(canvasRef.current)
     gameRef.current = game
 
-    game.on('scoreUpdate', (newScore: number) => setScore(newScore))
+    game.on('scoreUpdate', (newScore: number) => {
+      setScore(newScore)
+    })
     game.on('livesUpdate', (newLives: number) => setLives(newLives))
     game.on('levelUpdate', (newLevel: number) => setLevel(newLevel))
     game.on('stateChange', (state: string) => {
+      console.log('Game state changed:', state, 'current score:', scoreRef.current)
       setGameState(state as any)
-      // Save score to leaderboard on game over
-      if (state === 'gameover' && score > 0) {
-        saveToLeaderboard(score, level, currentMapName, currentMapId)
+      // Save score to leaderboard on game over (always save, even if 0)
+      if (state === 'gameover') {
+        console.log('Calling saveToLeaderboard, score:', scoreRef.current, 'level:', levelRef.current)
+        saveToLeaderboard(scoreRef.current, levelRef.current, currentMapNameRef.current, currentMapIdRef.current)
       }
       // Save score on victory too
-      if (state === 'victory' && score > 0) {
-        saveToLeaderboard(score, 5, currentMapName, currentMapId)
+      if (state === 'victory') {
+        saveToLeaderboard(scoreRef.current, 5, currentMapNameRef.current, currentMapIdRef.current)
       }
     })
 
@@ -90,23 +132,16 @@ export default function Home() {
 
   // Save score to leaderboard (database if logged in, localStorage otherwise)
   const saveToLeaderboard = async (finalScore: number, levelsCompleted: number, mapName?: string, mapId?: string) => {
-    if (user) {
-      // Save to database
-      await addScore(finalScore, levelsCompleted, {
-        userId: user.id,
-        mapId,
-        mapName: mapName || '默认地图',
-        ipAddress: userIp,
-        country: userCountry,
-      })
-    } else {
-      // Save to localStorage
+    console.log('saveToLeaderboard called:', { finalScore, levelsCompleted, mapName, user: userRef.current?.email, userId: userRef.current?.id })
+
+    const saveToLocalStorage = () => {
+      console.log('Saving to localStorage')
       const entry = {
         score: finalScore,
         date: Date.now(),
         levelsCompleted,
-        ip: userIp,
-        country: userCountry,
+        ip: userIpRef.current,
+        country: userCountryRef.current,
         mapId,
         mapName: mapName || '默认地图'
       }
@@ -116,6 +151,27 @@ export default function Home() {
       leaderboard.sort((a, b) => b.score - a.score)
       leaderboard = leaderboard.slice(0, 10)
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard))
+      console.log('Saved to localStorage:', entry)
+    }
+
+    if (userRef.current) {
+      // Save to database
+      console.log('Saving to database, userId:', userRef.current.id)
+      const result = await addScore(finalScore, levelsCompleted, {
+        userId: userRef.current.id,
+        mapId,
+        mapName: mapName || '默认地图',
+        ipAddress: userIpRef.current,
+        country: userCountryRef.current,
+      })
+      console.log('addScore result:', result)
+      // If database save failed (e.g., session expired), fallback to localStorage
+      if (!result) {
+        saveToLocalStorage()
+      }
+    } else {
+      // Save to localStorage
+      saveToLocalStorage()
     }
   }
 
@@ -180,18 +236,10 @@ export default function Home() {
     await signOut()
   }
 
-  if (authLoading) {
-    return (
-      <main className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">加载中...</div>
-      </main>
-    )
-  }
-
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-black">
-      {/* User info bar */}
-      <div className="w-full max-w-lg flex justify-between items-center text-white px-4 py-2 bg-gray-800/50 mb-2">
+      {/* User info bar - always visible at top */}
+      <div className="w-full max-w-2xl flex justify-between items-center text-white px-4 py-2 bg-gray-800/50 mb-11">
         <div>
           {user ? (
             <span className="text-green-400">欢迎, {user.email}</span>
@@ -221,13 +269,13 @@ export default function Home() {
       <div className="relative">
         {/* Game Header - show when playing, paused, gameover, or victory */}
         {(gameState === 'playing' || gameState === 'paused' || gameState === 'gameover' || gameState === 'victory') && (
-          <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4">
+          <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4 z-10 bg-black/60 py-1">
             <div className="flex items-center gap-4">
               <span className="text-yellow-400 font-bold">SCORE: {score}</span>
               <span className="text-green-400 font-bold">LEVEL: {level}</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-red-400 font-bold">LIVES: {'❤️'.repeat(lives)}</span>
+              <span className="text-red-400 font-bold">LIVES: {lives === 0 ? '0' : '❤️'.repeat(lives)}</span>
             </div>
           </div>
         )}

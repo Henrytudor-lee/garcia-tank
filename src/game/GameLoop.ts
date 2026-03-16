@@ -54,21 +54,36 @@ export class GameLoop {
       this.lastTime = currentTime - (deltaTime % this.frameInterval)
     }
 
-    this.animationFrameId = requestAnimationFrame(this.tick)
+    // Schedule next frame only if still running
+    if (this.running) {
+      this.animationFrameId = requestAnimationFrame(this.tick)
+    }
   }
 
   // Update all registered callbacks
   private update(deltaTime: number) {
-    console.log('GameLoop: Updating with deltaTime:', deltaTime)
+    // Skip if not running or no callbacks
+    if (!this.running || this.updateCallbacks.length === 0) return
+
     for (const callback of this.updateCallbacks) {
-      callback(deltaTime)
+      try {
+        callback(deltaTime)
+      } catch (error) {
+        console.error('Error in update callback:', error)
+      }
     }
   }
 
   // Render all registered callbacks
   private render() {
+    if (!this.running || this.renderCallbacks.length === 0) return
+
     for (const callback of this.renderCallbacks) {
-      callback()
+      try {
+        callback()
+      } catch (error) {
+        console.error('Error in render callback:', error)
+      }
     }
   }
 

@@ -46,10 +46,15 @@ export async function addScore(
     countryName?: string
   }
 ): Promise<boolean> {
+  console.log('addScore - userId:', options.userId)
+
+  // Use the provided userId directly (trusted from login)
+  const userIdToUse = options.userId || null
+
   const { error } = await supabase
     .from('leaderboard')
     .insert({
-      user_id: options.userId || null,
+      user_id: userIdToUse,
       score,
       levels_completed: levelsCompleted,
       map_id: options.mapId || null,
@@ -60,10 +65,11 @@ export async function addScore(
     })
 
   if (error) {
-    console.error('Error adding score:', error)
+    console.error('Error adding score to database:', error)
     return false
   }
 
+  console.log('Score saved to database successfully')
   return true
 }
 
