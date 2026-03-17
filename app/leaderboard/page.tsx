@@ -28,23 +28,11 @@ export default function LeaderboardPage() {
   const [selectedMap, setSelectedMap] = useState<string>('all')
   const [loading, setLoading] = useState(true)
 
-  // Check if user is a legacy user - do this synchronously
-  const isLegacyUser = (() => {
-    if (!user) return false
-    const storedUser = localStorage.getItem('tank_user')
-    if (!storedUser) return false
-    try {
-      return JSON.parse(storedUser).isLegacy === true
-    } catch {
-      return false
-    }
-  })()
-
   useEffect(() => {
     if (!authLoading) {
       loadData()
     }
-  }, [user, authLoading, isLegacyUser])
+  }, [user, authLoading])
 
   useEffect(() => {
     filterEntries()
@@ -159,21 +147,6 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {(!user || isLegacyUser) && (
-          <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-6">
-            <p className="text-yellow-400">
-              {isLegacyUser ? '您当前是本地登录模式，只显示本地排行榜。' : '您当前是游客模式，只显示本地排行榜。登录后可参与全球排行榜！'}
-            </p>
-            {!isLegacyUser && (
-              <button
-                onClick={() => router.push('/login')}
-                className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
-              >
-                登录
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Map Filter */}
         <div className="mb-4 flex items-center gap-4 flex-wrap">
