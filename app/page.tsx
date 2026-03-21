@@ -108,6 +108,12 @@ export default function Home() {
   const saveToLeaderboard = async (finalScore: number, levelsCompleted: number, mapName?: string, mapId?: string) => {
     console.log('saveToLeaderboard called:', { finalScore, levelsCompleted, mapName, user: userRef.current?.email, userId: userRef.current?.id })
 
+    // Don't save if score is 0
+    if (finalScore <= 0) {
+      console.log('Score is 0, not saving to leaderboard')
+      return
+    }
+
     const saveToLocalStorage = () => {
       console.log('Saving to localStorage')
       const entry = {

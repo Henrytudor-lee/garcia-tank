@@ -44,6 +44,12 @@ export async function addScore(
     mapName?: string
   }
 ): Promise<boolean> {
+  // Don't save if score is 0 or negative
+  if (score <= 0) {
+    console.log('Score is 0, not saving to leaderboard')
+    return false
+  }
+
   console.log('addScore - userId:', options.userId, 'email:', options.email)
 
   // Use the provided userId directly (trusted from login)
