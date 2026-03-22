@@ -240,12 +240,12 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-black">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-black py-8">
       {/* User info bar - always visible at top */}
-      <div className="w-full max-w-2xl flex justify-between items-center text-white px-4 py-2 bg-gray-800/50 mb-11">
+      <div className="w-full max-w-2xl flex justify-between items-center text-white px-4 py-3 bg-black/80 border-b border-neon-cyan/30 mb-8 rounded-b-lg">
         <div>
           {user ? (
-            <span className="text-green-400">{t('welcome')}, {user.email}</span>
+            <span className="text-neon-green">{t('welcome')}, <span className="text-neon-cyan">{user.email}</span></span>
           ) : (
             <span className="text-gray-400">{t('guestMode')}</span>
           )}
@@ -255,14 +255,14 @@ export default function Home() {
           {user ? (
             <button
               onClick={handleSignOut}
-              className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 rounded"
+              className="px-3 py-1 text-sm bg-neon-red/80 hover:bg-neon-red border border-neon-red rounded transition-all duration-300 hover:shadow-neon-red"
             >
               {t('logout')}
             </button>
           ) : (
             <button
               onClick={() => router.push('/login')}
-              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded"
+              className="px-3 py-1 text-sm bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan rounded transition-all duration-300 hover:shadow-neon-cyan"
             >
               {t('login')}
             </button>
@@ -270,22 +270,22 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative px-4">
         {/* Game Header - show when playing, paused, gameover, or victory */}
         {(gameState === 'playing' || gameState === 'paused' || gameState === 'gameover' || gameState === 'victory') && (
-          <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4 z-10 bg-black/60 py-1">
-            <div className="flex items-center gap-4">
-              <span className="text-yellow-400 font-bold">SCORE: {score}</span>
-              <span className="text-green-400 font-bold">LEVEL: {level}</span>
+          <div className="absolute -top-12 left-0 right-0 flex justify-between items-center text-white px-4 z-10 bg-black/80 border-b-2 border-neon-cyan/50 py-2">
+            <div className="flex items-center gap-6">
+              <span className="text-neon-yellow font-bold text-lg drop-shadow-[0_0_5px_#ffff00]">SCORE: {score}</span>
+              <span className="text-neon-cyan font-bold text-lg drop-shadow-[0_0_5px_#00ffff]">LEVEL: {level}</span>
             </div>
             <div className="flex items-center gap-4">
               {gameMode === GameMode.MULTIPLAYER ? (
                 <div className="flex items-center gap-4">
-                  <span className="text-green-400 font-bold">P1: {playerLives.player1 === 0 ? '💀' : '❤️'.repeat(playerLives.player1)}</span>
-                  <span className="text-yellow-400 font-bold">P2: {playerLives.player2 === 0 ? '💀' : '❤️'.repeat(playerLives.player2)}</span>
+                  <span className="text-neon-green font-bold drop-shadow-[0_0_5px_#00ff00]">P1: {playerLives.player1 === 0 ? '☠️' : '❤️'.repeat(playerLives.player1)}</span>
+                  <span className="text-neon-yellow font-bold drop-shadow-[0_0_5px_#ffff00]">P2: {playerLives.player2 === 0 ? '☠️' : '❤️'.repeat(playerLives.player2)}</span>
                 </div>
               ) : (
-                <span className="text-red-400 font-bold">LIVES: {lives === 0 ? '0' : '❤️'.repeat(lives)}</span>
+                <span className="text-neon-red font-bold drop-shadow-[0_0_5px_#ff0000]">LIVES: {lives === 0 ? '☠️' : '❤️'.repeat(lives)}</span>
               )}
             </div>
           </div>
@@ -296,26 +296,26 @@ export default function Home() {
           ref={canvasRef}
           width={canvasSize}
           height={canvasSize}
-          className="border-4 border-gray-700 bg-black"
+          className="border-4 border-neon-cyan/60 bg-black shadow-[0_0_15px_rgba(0,255,255,0.3)]"
           style={{ maxWidth: '100%', height: 'auto' }}
         />
 
         {/* Menu Overlay */}
         {gameState === 'menu' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-yellow-400 mb-8" style={{ textShadow: '2px 2px 0 #ff0000' }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90">
+            <h1 className="text-5xl font-bold text-neon-yellow mb-8 drop-shadow-[0_0_10px_#ffff00,0_0_20px_#ff0000]" style={{ textShadow: '0 0 10px #ffff00, 0 0 20px #ff0000, 0 0 30px #ff0000' }}>
               {t('tankBattle')}
             </h1>
-            <p className="text-gray-400 mb-2">{t('controls')}</p>
-            <p className="text-gray-400 mb-2">{t('controls2')}</p>
-            <p className="text-blue-400 mb-4 text-sm">
+            <p className="text-neon-cyan/80 mb-2">{t('controls')}</p>
+            <p className="text-neon-cyan/80 mb-2">{t('controls2')}</p>
+            <p className="text-neon-magenta/80 mb-6 text-sm">
               {t('multiplayerControls') || '双人模式: 玩家1(WASD+空格) 玩家2(方向键+0)'}
             </p>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               {/* Map Selection */}
               <div className="flex flex-col gap-2">
-                <p className="text-gray-400 text-center text-sm">{t('selectMap')}:</p>
+                <p className="text-neon-cyan/80 text-center text-sm">{t('selectMap')}:</p>
                 <select
                   onChange={(e) => {
                     if (e.target.value === 'default') {
@@ -325,7 +325,7 @@ export default function Home() {
                       setSelectedMap(map || null)
                     }
                   }}
-                  className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
+                  className="px-4 py-2 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
                   value={selectedMap?.id || 'default'}
                 >
                   <option value="default">{t('defaultMap')}</option>
@@ -338,7 +338,7 @@ export default function Home() {
               {/* Single Player Mode */}
               <button
                 onClick={() => startGame(selectedMap || undefined, GameMode.SINGLE)}
-                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-green"
               >
                 {t('singlePlayer') || '单人模式'}
               </button>
@@ -346,21 +346,21 @@ export default function Home() {
               {/* Multiplayer Mode */}
               <button
                 onClick={() => startGame(selectedMap || undefined, GameMode.MULTIPLAYER)}
-                className="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-yellow/20 hover:bg-neon-yellow/40 border-2 border-neon-yellow text-neon-yellow font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-yellow"
               >
                 {t('multiplayer') || '双人模式'}
               </button>
 
               <button
                 onClick={goToCustomMaps}
-                className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-purple/20 hover:bg-neon-purple/40 border-2 border-neon-purple text-neon-purple font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-purple"
               >
                 {t('customMaps')}
               </button>
 
               <button
                 onClick={goToLeaderboard}
-                className="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-magenta/20 hover:bg-neon-magenta/40 border-2 border-neon-magenta text-neon-magenta font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-magenta"
               >
                 {t('leaderboard')}
               </button>
@@ -370,18 +370,18 @@ export default function Home() {
 
         {/* Pause Overlay */}
         {gameState === 'paused' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-blue-400 mb-8">{t('paused')}</h1>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90">
+            <h1 className="text-4xl font-bold text-neon-cyan mb-8 drop-shadow-[0_0_10px_#00ffff]">{t('paused')}</h1>
             <div className="flex flex-col gap-4">
               <button
                 onClick={resumeGame}
-                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-green"
               >
                 {t('resumeGame')}
               </button>
               <button
                 onClick={goToMainMenu}
-                className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-gray-800/50 hover:bg-gray-700/50 border-2 border-gray-600 text-gray-300 font-bold rounded text-xl transition-all duration-300"
               >
                 {t('returnToMenu')}
               </button>
@@ -392,20 +392,20 @@ export default function Home() {
 
         {/* Game Over Overlay */}
         {gameState === 'gameover' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-red-500 mb-4">{t('gameOver')}</h1>
-            <p className="text-white mb-2">{t('finalScore')}: {score}</p>
-            <p className="text-gray-400 mb-8">{t('reachedLevel')}: {level}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90">
+            <h1 className="text-4xl font-bold text-neon-red mb-4 drop-shadow-[0_0_10px_#ff0000]">{t('gameOver')}</h1>
+            <p className="text-white mb-2">{t('finalScore')}: <span className="text-neon-yellow">{score}</span></p>
+            <p className="text-neon-cyan/70 mb-8">{t('reachedLevel')}: {level}</p>
             <div className="flex flex-col gap-4">
               <button
                 onClick={restartGame}
-                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-green"
               >
                 {t('restart')}
               </button>
               <button
                 onClick={goToMainMenu}
-                className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-gray-800/50 hover:bg-gray-700/50 border-2 border-gray-600 text-gray-300 font-bold rounded text-xl transition-all duration-300"
               >
                 {t('returnToMenu')}
               </button>
@@ -415,19 +415,19 @@ export default function Home() {
 
         {/* Victory Overlay */}
         {gameState === 'victory' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-yellow-400 mb-4">{t('victory')}</h1>
-            <p className="text-white mb-2">{t('finalScore')}: {score}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90">
+            <h1 className="text-4xl font-bold text-neon-yellow mb-4 drop-shadow-[0_0_10px_#ffff00,0_0_20px_#ffff00]">{t('victory')}</h1>
+            <p className="text-white mb-2">{t('finalScore')}: <span className="text-neon-yellow">{score}</span></p>
             <div className="flex flex-col gap-4">
               <button
                 onClick={restartGame}
-                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-green"
               >
                 {t('playAgain')}
               </button>
               <button
                 onClick={goToMainMenu}
-                className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded text-xl transition"
+                className="px-8 py-3 bg-gray-800/50 hover:bg-gray-700/50 border-2 border-gray-600 text-gray-300 font-bold rounded text-xl transition-all duration-300"
               >
                 {t('returnToMenu')}
               </button>

@@ -343,20 +343,20 @@ function MapEditorContent() {
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 border-b border-neon-cyan/30 pb-4">
           <div>
-            <h1 className="text-2xl font-bold text-yellow-400">
+            <h1 className="text-2xl font-bold text-neon-yellow drop-shadow-[0_0_10px_#ffff00]">
               {mapId ? t('editMap') : t('createMap')}
             </h1>
             {user && (
-              <p className="text-gray-400 text-sm">{t('loggedInAs')}: {user.email}</p>
+              <p className="text-gray-400 text-sm">{t('loggedInAs')}: <span className="text-neon-cyan">{user.email}</span></p>
             )}
           </div>
           <div className="flex gap-2">
             <LanguageToggle />
             <button
               onClick={goBack}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+              className="px-4 py-2 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded transition-all duration-300 hover:shadow-neon-cyan"
             >
               {t('returnToMenu')}
             </button>
@@ -364,8 +364,8 @@ function MapEditorContent() {
         </div>
 
         {!user && (
-          <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-4">
-            <p className="text-yellow-400 text-sm">
+          <div className="bg-neon-yellow/10 border border-neon-yellow/50 p-4 rounded mb-4">
+            <p className="text-neon-yellow text-sm">
               {t('guestModeNotice')}
             </p>
           </div>
@@ -373,23 +373,23 @@ function MapEditorContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left panel - Settings */}
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-lg font-bold mb-4">{t('mapSettings')}</h2>
+          <div className="bg-black/80 p-4 rounded-lg border-2 border-neon-cyan/30">
+            <h2 className="text-lg font-bold text-neon-cyan mb-4">{t('mapSettings')}</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-1">{t('mapName')}</label>
+                <label className="block text-sm text-neon-cyan/80 mb-1">{t('mapName')}</label>
                 <input
                   type="text"
                   value={mapName}
                   onChange={(e) => setMapName(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
+                  className="w-full px-3 py-2 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-1">{t('width')} (8-20)</label>
+                  <label className="block text-sm text-neon-cyan/80 mb-1">{t('width')} (8-20)</label>
                   <input
                     type="number"
                     min={8}
@@ -397,11 +397,11 @@ function MapEditorContent() {
                     value={mapWidth}
                     onChange={(e) => setMapWidth(Number(e.target.value))}
                     onBlur={handleSizeChange}
-                    className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
+                    className="w-full px-3 py-2 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">{t('height')} (8-20)</label>
+                  <label className="block text-sm text-neon-cyan/80 mb-1">{t('height')} (8-20)</label>
                   <input
                     type="number"
                     min={8}
@@ -409,25 +409,25 @@ function MapEditorContent() {
                     value={mapHeight}
                     onChange={(e) => setMapHeight(Number(e.target.value))}
                     onBlur={handleSizeChange}
-                    className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600"
+                    className="w-full px-3 py-2 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <button
                 onClick={saveMap}
-                className="w-full px-4 py-3 bg-green-600 hover:bg-green-500 rounded font-bold"
+                className="w-full px-4 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded transition-all duration-300 hover:shadow-neon-green"
               >
                 {t('saveMap')}
               </button>
             </div>
 
-            <h2 className="text-lg font-bold mt-6 mb-4">{t('tools')}</h2>
+            <h2 className="text-lg font-bold text-neon-cyan mt-6 mb-4">{t('tools')}</h2>
 
             <div className="space-y-2">
               <button
                 onClick={() => setEditMode('wall')}
-                className={`w-full px-4 py-2 rounded ${editMode === 'wall' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                className={`w-full px-4 py-2 rounded transition-all duration-300 ${editMode === 'wall' ? 'bg-neon-cyan/40 border-2 border-neon-cyan text-neon-cyan' : 'bg-black/60 border-2 border-neon-cyan/30 text-neon-cyan/70 hover:border-neon-cyan/60'}`}
               >
                 {t('placeWall')}
               </button>
@@ -436,28 +436,28 @@ function MapEditorContent() {
                 <div className="grid grid-cols-2 gap-2 ml-2">
                   <button
                     onClick={() => setSelectedTileType(TileType.BRICK)}
-                    className={`px-3 py-2 rounded ${selectedTileType === TileType.BRICK ? 'bg-blue-600' : 'bg-gray-600'}`}
+                    className={`px-3 py-2 rounded border-2 transition-all duration-300 ${selectedTileType === TileType.BRICK ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan' : 'border-neon-cyan/30 text-gray-300 hover:border-neon-cyan/60'}`}
                     style={{ backgroundColor: selectedTileType === TileType.BRICK ? undefined : '#8B4513' }}
                   >
                     {t('brick')}
                   </button>
                   <button
                     onClick={() => setSelectedTileType(TileType.STEEL)}
-                    className={`px-3 py-2 rounded ${selectedTileType === TileType.STEEL ? 'bg-blue-600' : 'bg-gray-600'}`}
+                    className={`px-3 py-2 rounded border-2 transition-all duration-300 ${selectedTileType === TileType.STEEL ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan' : 'border-neon-cyan/30 text-gray-300 hover:border-neon-cyan/60'}`}
                     style={{ backgroundColor: selectedTileType === TileType.STEEL ? undefined : '#708090' }}
                   >
                     {t('steel')}
                   </button>
                   <button
                     onClick={() => setSelectedTileType(TileType.GRASS)}
-                    className={`px-3 py-2 rounded ${selectedTileType === TileType.GRASS ? 'bg-blue-600' : 'bg-gray-600'}`}
+                    className={`px-3 py-2 rounded border-2 transition-all duration-300 ${selectedTileType === TileType.GRASS ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan' : 'border-neon-cyan/30 text-gray-300 hover:border-neon-cyan/60'}`}
                     style={{ backgroundColor: selectedTileType === TileType.GRASS ? undefined : '#228B22' }}
                   >
                     {t('grass')}
                   </button>
                   <button
                     onClick={() => setSelectedTileType(TileType.WATER)}
-                    className={`px-3 py-2 rounded ${selectedTileType === TileType.WATER ? 'bg-blue-600' : 'bg-gray-600'}`}
+                    className={`px-3 py-2 rounded border-2 transition-all duration-300 ${selectedTileType === TileType.WATER ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan' : 'border-neon-cyan/30 text-gray-300 hover:border-neon-cyan/60'}`}
                     style={{ backgroundColor: selectedTileType === TileType.WATER ? undefined : '#1E90FF' }}
                   >
                     {t('water')}
@@ -467,35 +467,35 @@ function MapEditorContent() {
 
               <button
                 onClick={() => setEditMode('player')}
-                className={`w-full px-4 py-2 rounded ${editMode === 'player' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                className={`w-full px-4 py-2 rounded transition-all duration-300 ${editMode === 'player' ? 'bg-neon-cyan/40 border-2 border-neon-cyan text-neon-cyan' : 'bg-black/60 border-2 border-neon-cyan/30 text-neon-cyan/70 hover:border-neon-cyan/60'}`}
               >
                 {t('setPlayerSpawn')}
               </button>
 
               <button
                 onClick={() => setEditMode('base')}
-                className={`w-full px-4 py-2 rounded ${editMode === 'base' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                className={`w-full px-4 py-2 rounded transition-all duration-300 ${editMode === 'base' ? 'bg-neon-cyan/40 border-2 border-neon-cyan text-neon-cyan' : 'bg-black/60 border-2 border-neon-cyan/30 text-neon-cyan/70 hover:border-neon-cyan/60'}`}
               >
                 {t('setBasePosition')}
               </button>
 
               <button
                 onClick={() => setEditMode('enemy')}
-                className={`w-full px-4 py-2 rounded ${editMode === 'enemy' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                className={`w-full px-4 py-2 rounded transition-all duration-300 ${editMode === 'enemy' ? 'bg-neon-cyan/40 border-2 border-neon-cyan text-neon-cyan' : 'bg-black/60 border-2 border-neon-cyan/30 text-neon-cyan/70 hover:border-neon-cyan/60'}`}
               >
                 {t('addEnemySpawn')}
               </button>
 
               <button
                 onClick={() => setEditMode('erase')}
-                className={`w-full px-4 py-2 rounded ${editMode === 'erase' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                className={`w-full px-4 py-2 rounded transition-all duration-300 ${editMode === 'erase' ? 'bg-neon-red/40 border-2 border-neon-red text-neon-red' : 'bg-black/60 border-2 border-neon-red/30 text-neon-red/70 hover:border-neon-red/60'}`}
               >
                 {t('eraser')}
               </button>
             </div>
 
-            <div className="mt-6 text-sm text-gray-400">
-              <p>{t('tips')}</p>
+            <div className="mt-6 text-sm text-neon-cyan/60">
+              <p className="text-neon-cyan/80">{t('tips')}</p>
               <ul className="list-disc list-inside mt-2">
                 <li>{t('tip1')}</li>
                 <li>{t('tip2')}</li>
@@ -505,7 +505,7 @@ function MapEditorContent() {
           </div>
 
           {/* Center - Editor canvas */}
-          <div className="lg:col-span-2 bg-gray-800 p-4 rounded-lg flex flex-col items-center">
+          <div className="lg:col-span-2 bg-black/80 p-4 rounded-lg border-2 border-neon-cyan/30 flex flex-col items-center">
             <canvas
               ref={canvasRef}
               width={640}
@@ -515,7 +515,7 @@ function MapEditorContent() {
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseUp}
               onContextMenu={handleRightClick}
-              className="cursor-crosshair border border-gray-600"
+              className="cursor-crosshair border-2 border-neon-cyan/50"
               style={{
                 width: '100%',
                 maxWidth: '640px',
@@ -525,25 +525,25 @@ function MapEditorContent() {
             />
 
             {/* Legend */}
-            <div className="mt-4 flex flex-wrap gap-4 justify-center text-sm">
+            <div className="mt-4 flex flex-wrap gap-4 justify-center text-sm text-neon-cyan/80">
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-green-500"></div>
+                <div className="w-4 h-4 bg-neon-green"></div>
                 <span>{t('playerSpawn')}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-yellow-500"></div>
+                <div className="w-4 h-4 bg-neon-yellow"></div>
                 <span>{t('basePosition')}</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-red-500"></div>
+                <div className="w-4 h-4 bg-neon-red"></div>
                 <span>{t('enemySpawns')} ({enemySpawns.length})</span>
               </div>
             </div>
 
             {/* Info */}
             <div className="mt-4 text-center text-sm text-gray-400">
-              <p>{t('mapSize')}: {mapWidth} x {mapHeight}</p>
-              <p>{t('enemySpawns')}: {enemySpawns.length} {t('enemies')}</p>
+              <p>{t('mapSize')}: <span className="text-neon-cyan">{mapWidth} x {mapHeight}</span></p>
+              <p>{t('enemySpawns')}: <span className="text-neon-red">{enemySpawns.length}</span> {t('enemies')}</p>
             </div>
           </div>
         </div>

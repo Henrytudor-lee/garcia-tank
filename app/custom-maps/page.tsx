@@ -93,12 +93,12 @@ export default function CustomMapsPage() {
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 border-b border-neon-cyan/30 pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-yellow-400">{t('customMapsTitle')}</h1>
+            <h1 className="text-3xl font-bold text-neon-yellow drop-shadow-[0_0_10px_#ffff00]">{t('customMapsTitle')}</h1>
             {user && (
               <p className="text-gray-400 text-sm mt-1">
-                {t('loggedInAs')}: {user.email}
+                {t('loggedInAs')}: <span className="text-neon-cyan">{user.email}</span>
               </p>
             )}
           </div>
@@ -106,7 +106,7 @@ export default function CustomMapsPage() {
             <LanguageToggle />
             <button
               onClick={goBack}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+              className="px-4 py-2 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded transition-all duration-300 hover:shadow-neon-cyan"
             >
               {t('returnToMenu')}
             </button>
@@ -114,13 +114,13 @@ export default function CustomMapsPage() {
         </div>
 
         {!user && (
-          <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-6">
-            <p className="text-yellow-400">
+          <div className="bg-neon-yellow/10 border border-neon-yellow/50 p-4 rounded mb-6">
+            <p className="text-neon-yellow">
               {t('guestModeNotice')}
             </p>
             <button
               onClick={() => router.push('/login')}
-              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+              className="mt-2 px-4 py-2 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded transition-all duration-300 hover:shadow-neon-cyan text-sm"
             >
               {t('login')}
             </button>
@@ -130,7 +130,7 @@ export default function CustomMapsPage() {
         <div className="flex gap-4 mb-6">
           <button
             onClick={createNewMap}
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 rounded font-bold"
+            className="px-6 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded transition-all duration-300 hover:shadow-neon-green"
           >
             {t('createNewMap')}
           </button>
@@ -146,11 +146,11 @@ export default function CustomMapsPage() {
             {maps.map(map => (
               <div
                 key={map.id}
-                className="bg-gray-800 p-4 rounded-lg border border-gray-700"
+                className="bg-black/80 p-4 rounded-lg border-2 border-neon-cyan/30 hover:border-neon-cyan/60 transition-all duration-300"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-bold text-yellow-400">{map.name}</h3>
+                    <h3 className="text-xl font-bold text-neon-yellow drop-shadow-[0_0_5px_#ffff00]">{map.name}</h3>
                     <p className="text-gray-400 text-sm">
                       {t('size')}: {map.width} x {map.height} |
                       {t('walls')}: {getTileCount(map)} |
@@ -161,13 +161,13 @@ export default function CustomMapsPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => editMap(map.id)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded"
+                      className="px-4 py-2 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded transition-all duration-300 hover:shadow-neon-cyan"
                     >
                       {t('edit')}
                     </button>
                     <button
                       onClick={() => deleteMap(map.id)}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded"
+                      className="px-4 py-2 bg-neon-red/20 hover:bg-neon-red/40 border border-neon-red/50 text-neon-red rounded transition-all duration-300 hover:shadow-neon-red"
                     >
                       {t('delete')}
                     </button>

@@ -124,7 +124,7 @@ export default function LeaderboardPage() {
   if (authLoading || loading) {
     return (
       <main className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">{t('loading')}</div>
+        <div className="text-neon-cyan">{t('loading')}</div>
       </main>
     )
   }
@@ -132,12 +132,12 @@ export default function LeaderboardPage() {
   return (
     <main className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 border-b border-neon-cyan/30 pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-yellow-400">{t('leaderboardTitle')}</h1>
+            <h1 className="text-3xl font-bold text-neon-yellow drop-shadow-[0_0_10px_#ffff00]">{t('leaderboardTitle')}</h1>
             {user && (
               <p className="text-gray-400 text-sm mt-1">
-                {t('loggedInAs')}: {user.email}
+                {t('loggedInAs')}: <span className="text-neon-cyan">{user.email}</span>
               </p>
             )}
           </div>
@@ -145,7 +145,7 @@ export default function LeaderboardPage() {
             <LanguageToggle />
             <button
               onClick={goBack}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+              className="px-4 py-2 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded transition-all duration-300 hover:shadow-neon-cyan"
             >
               {t('returnToMenu')}
             </button>
@@ -155,11 +155,11 @@ export default function LeaderboardPage() {
 
         {/* Map and Mode Filter */}
         <div className="mb-4 flex items-center gap-4 flex-wrap">
-          <label className="text-gray-400">{t('filterMap')}:</label>
+          <label className="text-neon-cyan/80">{t('filterMap')}:</label>
           <select
             value={selectedMap}
             onChange={(e) => setSelectedMap(e.target.value)}
-            className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
+            className="px-4 py-2 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
           >
             <option value="all">{t('allMaps')}</option>
             <option value="default">{t('defaultMap')}</option>
@@ -167,17 +167,17 @@ export default function LeaderboardPage() {
               <option key={map.id} value={map.id}>{map.name}</option>
             ))}
           </select>
-          <label className="text-gray-400">{t('filterMode') || '模式'}:</label>
+          <label className="text-neon-cyan/80">{t('filterMode') || '模式'}:</label>
           <select
             value={selectedMode}
             onChange={(e) => setSelectedMode(e.target.value)}
-            className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
+            className="px-4 py-2 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
           >
             <option value="all">{t('allModes') || '全部'}</option>
             <option value="single">{t('singlePlayer') || '单人'}</option>
             <option value="multiplayer">{t('multiplayer') || '双人'}</option>
           </select>
-          <span className="text-gray-400 text-sm">
+          <span className="text-neon-cyan/70 text-sm">
             {filteredEntries.length} {t('totalRecords')}
           </span>
         </div>
@@ -192,13 +192,13 @@ export default function LeaderboardPage() {
             <div className="bg-gray-800 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-700">
-                    <th className="px-2 py-3 text-left w-16">{t('rank')}</th>
-                    <th className="px-2 py-3 text-right">{t('score')}</th>
-                    <th className="px-2 py-3 text-center w-24">{t('map')}</th>
-                    <th className="px-2 py-3 text-center w-24">{t('mode') || '模式'}</th>
-                    <th className="px-2 py-3 text-center w-48">{t('email')}</th>
-                    <th className="px-2 py-3 text-right hidden lg:table-cell">{t('date')}</th>
+                  <tr className="bg-black/80 border-b border-neon-cyan/30">
+                    <th className="px-2 py-3 text-left w-16 text-neon-cyan">{t('rank')}</th>
+                    <th className="px-2 py-3 text-right text-neon-cyan">{t('score')}</th>
+                    <th className="px-2 py-3 text-center w-24 text-neon-cyan">{t('map')}</th>
+                    <th className="px-2 py-3 text-center w-24 text-neon-cyan">{t('mode') || '模式'}</th>
+                    <th className="px-2 py-3 text-center w-48 text-neon-cyan">{t('email')}</th>
+                    <th className="px-2 py-3 text-right hidden lg:table-cell text-neon-cyan">{t('date')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -223,15 +223,15 @@ export default function LeaderboardPage() {
                         {entry.score.toLocaleString()}
                       </td>
                       <td className="px-2 py-3 text-center text-sm">
-                        <span className="px-2 py-1 bg-gray-700 rounded text-gray-300">
+                        <span className="px-2 py-1 bg-black/60 border border-neon-cyan/30 rounded text-neon-cyan/80">
                           {entry.mapName || t('defaultMap')}
                         </span>
                       </td>
                       <td className="px-2 py-3 text-center text-sm">
                         <span className={`px-2 py-1 rounded ${
                           entry.gameMode === 'multiplayer'
-                            ? 'bg-yellow-700 text-yellow-200'
-                            : 'bg-green-700 text-green-200'
+                            ? 'bg-neon-yellow/20 border border-neon-yellow/50 text-neon-yellow'
+                            : 'bg-neon-green/20 border border-neon-green/50 text-neon-green'
                         }`}>
                           {entry.gameMode === 'multiplayer' ? (t('multiplayer') || '双人') : (t('singlePlayer') || '单人')}
                         </span>

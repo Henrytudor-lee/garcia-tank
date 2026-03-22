@@ -48,64 +48,64 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-gray-800 rounded-lg p-8 border border-gray-700">
+        <div className="bg-black/80 rounded-lg p-8 border-2 border-neon-cyan/30">
           <div className="flex justify-end mb-4">
             <LanguageToggle />
           </div>
-          <h1 className="text-3xl font-bold text-yellow-400 text-center mb-8">{t('register')}</h1>
+          <h1 className="text-3xl font-bold text-neon-yellow text-center mb-8 drop-shadow-[0_0_10px_#ffff00]">{t('register')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-500/20 border border-red-500 text-red-400 p-3 rounded">
+              <div className="bg-neon-red/20 border border-neon-red/50 text-neon-red p-3 rounded">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-gray-400 mb-2">{t('username')}</label>
+              <label className="block text-neon-cyan/80 mb-2">{t('username')}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
+                className="w-full px-4 py-3 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                 placeholder={t('username')}
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 mb-2">{t('email')}</label>
+              <label className="block text-neon-cyan/80 mb-2">{t('email')}</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
+                className="w-full px-4 py-3 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                 placeholder="your@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 mb-2">{t('password')}</label>
+              <label className="block text-neon-cyan/80 mb-2">{t('password')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
+                className="w-full px-4 py-3 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                 placeholder={t('passwordTooShort')}
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 mb-2">{t('confirmPassword')}</label>
+              <label className="block text-neon-cyan/80 mb-2">{t('confirmPassword')}</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
+                className="w-full px-4 py-3 bg-black/80 rounded border-2 border-neon-cyan/50 text-white focus:border-neon-cyan focus:outline-none transition-colors"
                 placeholder={t('confirmPassword')}
               />
             </div>
@@ -113,7 +113,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white font-bold rounded transition"
+              className="w-full py-3 bg-neon-green/20 hover:bg-neon-green/40 disabled:bg-gray-800 border-2 border-neon-green text-neon-green font-bold rounded transition-all duration-300 hover:shadow-neon-green"
             >
               {loading ? t('registering') : t('registerButton')}
             </button>
@@ -121,13 +121,13 @@ export default function RegisterPage() {
 
           <p className="text-center text-gray-400 mt-6">
             {t('hasAccount')}{' '}
-            <Link href="/login" className="text-yellow-400 hover:underline">
+            <Link href="/login" className="text-neon-yellow hover:underline drop-shadow-[0_0_5px_#ffff00]">
               {t('login')}
             </Link>
           </p>
 
-          <p className="text-center text-gray-400 mt-4">
-            <Link href="/" className="text-gray-500 hover:underline">
+          <p className="text-center text-gray-500 mt-4">
+            <Link href="/" className="text-gray-500 hover:text-neon-cyan transition-colors">
               {t('backToHome')}
             </Link>
           </p>
