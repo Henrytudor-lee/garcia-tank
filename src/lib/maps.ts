@@ -64,6 +64,7 @@ export async function saveCustomMap(userId: string, map: CustomMap, isPublic: bo
       enemy_spawns: map.enemySpawns,
       is_public: isPublic,
     })
+    .eq('user_id', userId)
     .select()
     .single()
 
