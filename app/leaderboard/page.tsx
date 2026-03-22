@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/src/lib/auth-context'
+import { useLanguage } from '@/src/lib/i18n'
 import { getLeaderboard } from '@/src/lib/leaderboard'
 import type { CustomMap } from '@/src/game/types'
+import { LanguageToggle } from '@/src/components/LanguageToggle'
 
 
 interface LeaderboardEntry {
@@ -22,6 +24,7 @@ interface LeaderboardEntry {
 export default function LeaderboardPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { t } = useLanguage()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [filteredEntries, setFilteredEntries] = useState<LeaderboardEntry[]>([])
   const [customMaps, setCustomMaps] = useState<CustomMap[]>([])
@@ -49,7 +52,7 @@ export default function LeaderboardPage() {
       date: new Date(e.created_at).getTime(),
       levelsCompleted: e.levels_completed,
       mapId: e.map_id || undefined,
-      mapName: e.map_name || '默认地图',
+      mapName: e.map_name || t('defaultMap'),
       email: e.email || undefined,
       userId: e.user_id || undefined,
       username: e.username || undefined,
@@ -86,18 +89,18 @@ export default function LeaderboardPage() {
     if (selectedMap === 'all') {
       setFilteredEntries(entries)
     } else if (selectedMap === 'default') {
-      setFilteredEntries(entries.filter(e => !e.mapId || e.mapName === '默认地图'))
+      setFilteredEntries(entries.filter(e => !e.mapId || e.mapName === t('defaultMap')))
     } else {
       setFilteredEntries(entries.filter(e => e.mapId === selectedMap))
     }
   }
 
   const clearLeaderboard = async () => {
-    if (!confirm('确定要清空排行榜吗？')) return
+    if (!confirm(t('confirmClearLeaderboard'))) return
 
     if (user) {
       // Note: In production, you'd want a server-side function to clear
-      alert('请联系管理员清空云端排行榜')
+      alert(t('contactAdmin'))
     } else {
       localStorage.removeItem('leaderboard')
       setEntries([])
@@ -122,7 +125,7 @@ export default function LeaderboardPage() {
   if (authLoading || loading) {
     return (
       <main className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">加载中...</div>
+        <div className="text-white">{t('loading')}</div>
       </main>
     )
   }
@@ -132,45 +135,48 @@ export default function LeaderboardPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-yellow-400">排行榜</h1>
+            <h1 className="text-3xl font-bold text-yellow-400">{t('leaderboardTitle')}</h1>
             {user && (
               <p className="text-gray-400 text-sm mt-1">
-                登录账号: {user.email}
+                {t('loggedInAs')}: {user.email}
               </p>
             )}
           </div>
-          <button
-            onClick={goBack}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
-          >
-            返回
-          </button>
+          <div className="flex gap-2">
+            <LanguageToggle />
+            <button
+              onClick={goBack}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+            >
+              {t('returnToMenu')}
+            </button>
+          </div>
         </div>
 
 
         {/* Map Filter */}
         <div className="mb-4 flex items-center gap-4 flex-wrap">
-          <label className="text-gray-400">筛选地图:</label>
+          <label className="text-gray-400">{t('filterMap')}:</label>
           <select
             value={selectedMap}
             onChange={(e) => setSelectedMap(e.target.value)}
             className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
           >
-            <option value="all">全部地图</option>
-            <option value="default">默认地图</option>
+            <option value="all">{t('allMaps')}</option>
+            <option value="default">{t('defaultMap')}</option>
             {customMaps.map(map => (
               <option key={map.id} value={map.id}>{map.name}</option>
             ))}
           </select>
           <span className="text-gray-400 text-sm">
-            共 {filteredEntries.length} 条记录
+            {filteredEntries.length} {t('totalRecords')}
           </span>
         </div>
 
         {filteredEntries.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <p className="text-xl mb-4">暂无记录</p>
-            <p>开始游戏来创造你的最高分吧！</p>
+            <p className="text-xl mb-4">{t('noRecords')}</p>
+            <p>{t('startGameToRecord')}</p>
           </div>
         ) : (
           <>
@@ -178,11 +184,11 @@ export default function LeaderboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-700">
-                    <th className="px-2 py-3 text-left w-16">排名</th>
-                    <th className="px-2 py-3 text-right">分数</th>
-                    <th className="px-2 py-3 text-center w-24">地图</th>
-                    <th className="px-2 py-3 text-center w-48">邮箱</th>
-                    <th className="px-2 py-3 text-right hidden lg:table-cell">日期</th>
+                    <th className="px-2 py-3 text-left w-16">{t('rank')}</th>
+                    <th className="px-2 py-3 text-right">{t('score')}</th>
+                    <th className="px-2 py-3 text-center w-24">{t('map')}</th>
+                    <th className="px-2 py-3 text-center w-48">{t('email')}</th>
+                    <th className="px-2 py-3 text-right hidden lg:table-cell">{t('date')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -208,7 +214,7 @@ export default function LeaderboardPage() {
                       </td>
                       <td className="px-2 py-3 text-center text-sm">
                         <span className="px-2 py-1 bg-gray-700 rounded text-gray-300">
-                          {entry.mapName || '默认地图'}
+                          {entry.mapName || t('defaultMap')}
                         </span>
                       </td>
                       <td className="px-2 py-3 text-center text-gray-300 text-sm">

@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import { GameEngine } from '@/src/game/GameEngine'
 import { CustomMap } from '@/src/game/types'
 import { useAuth } from '@/src/lib/auth-context'
+import { useLanguage } from '@/src/lib/i18n'
 import { getUserMaps, saveCustomMap } from '@/src/lib/maps'
 import { addScore } from '@/src/lib/leaderboard'
+import { LanguageToggle } from '@/src/components/LanguageToggle'
 
 const TILE_SIZE = 40
 const DEFAULT_MAP_SIZE = 13
@@ -14,6 +16,7 @@ const DEFAULT_MAP_SIZE = 13
 export default function Home() {
   const router = useRouter()
   const { user, signOut, loading: authLoading } = useAuth()
+  const { t } = useLanguage()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<GameEngine | null>(null)
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameover' | 'victory'>('menu')
@@ -23,14 +26,19 @@ export default function Home() {
   const [selectedMap, setSelectedMap] = useState<CustomMap | null>(null)
   const [customMaps, setCustomMaps] = useState<CustomMap[]>([])
   const [canvasSize, setCanvasSize] = useState(DEFAULT_MAP_SIZE * TILE_SIZE)
-  const [currentMapName, setCurrentMapName] = useState('默认地图')
+  const [currentMapName, setCurrentMapName] = useState('')
+
+  // Initialize after mount to avoid hydration mismatch
+  useEffect(() => {
+    setCurrentMapName(t('defaultMap'))
+  }, [t])
   const [currentMapId, setCurrentMapId] = useState<string | undefined>(undefined)
 
   // Use refs to store current values for callbacks
   const scoreRef = useRef(0)
   const levelRef = useRef(1)
   const userRef = useRef(user)
-  const currentMapNameRef = useRef('默认地图')
+  const currentMapNameRef = useRef(t('defaultMap'))
   const currentMapIdRef = useRef<string | undefined>(undefined)
 
   // Keep refs in sync with state
@@ -171,7 +179,7 @@ export default function Home() {
         setCurrentMapId(customMap.id)
         gameRef.current.startWithCustomMap(customMap, newSize)
       } else {
-        setCurrentMapName('默认地图')
+        setCurrentMapName(t('defaultMap'))
         setCurrentMapId(undefined)
         gameRef.current.start(newSize)
       }
@@ -192,7 +200,7 @@ export default function Home() {
 
   const goToCustomMaps = () => {
     if (!user) {
-      alert('请先登录后才能创建和管理自定义地图')
+      alert(t('pleaseLoginFirst'))
       router.push('/login')
       return
     }
@@ -220,25 +228,26 @@ export default function Home() {
       <div className="w-full max-w-2xl flex justify-between items-center text-white px-4 py-2 bg-gray-800/50 mb-11">
         <div>
           {user ? (
-            <span className="text-green-400">欢迎, {user.email}</span>
+            <span className="text-green-400">{t('welcome')}, {user.email}</span>
           ) : (
-            <span className="text-gray-400">游客模式</span>
+            <span className="text-gray-400">{t('guestMode')}</span>
           )}
         </div>
         <div className="flex gap-2">
+          <LanguageToggle />
           {user ? (
             <button
               onClick={handleSignOut}
               className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 rounded"
             >
-              退出登录
+              {t('logout')}
             </button>
           ) : (
             <button
               onClick={() => router.push('/login')}
               className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded"
             >
-              登录
+              {t('login')}
             </button>
           )}
         </div>
@@ -271,22 +280,22 @@ export default function Home() {
         {gameState === 'menu' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
             <h1 className="text-4xl font-bold text-yellow-400 mb-8" style={{ textShadow: '2px 2px 0 #ff0000' }}>
-              坦克大战
+              {t('tankBattle')}
             </h1>
-            <p className="text-gray-400 mb-2">WASD / 方向键 移动</p>
-            <p className="text-gray-400 mb-8">空格键 射击 | P键 暂停</p>
+            <p className="text-gray-400 mb-2">{t('controls')}</p>
+            <p className="text-gray-400 mb-8">{t('controls2')}</p>
 
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => startGame()}
                 className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
               >
-                开始游戏
+                {t('startGame')}
               </button>
 
               {customMaps.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-gray-400 text-center text-sm">选择自定义地图:</p>
+                  <p className="text-gray-400 text-center text-sm">{t('selectMap')}:</p>
                   <select
                     onChange={(e) => {
                       const map = customMaps.find(m => m.id === e.target.value)
@@ -295,7 +304,7 @@ export default function Home() {
                     className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
                     value={selectedMap?.id || ''}
                   >
-                    <option value="">-- 选择地图 --</option>
+                    <option value="">{t('selectMapPlaceholder')}</option>
                     {customMaps.map(map => (
                       <option key={map.id} value={map.id}>{map.name}</option>
                     ))}
@@ -305,7 +314,7 @@ export default function Home() {
                       onClick={() => startGame(selectedMap)}
                       className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xl transition"
                     >
-                      使用此地图开始
+                      {t('useMapStart')}
                     </button>
                   )}
                 </div>
@@ -315,14 +324,14 @@ export default function Home() {
                 onClick={goToCustomMaps}
                 className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded text-xl transition"
               >
-                自定义地图
+                {t('customMaps')}
               </button>
 
               <button
                 onClick={goToLeaderboard}
                 className="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded text-xl transition"
               >
-                排行榜
+                {t('leaderboard')}
               </button>
             </div>
           </div>
@@ -331,43 +340,43 @@ export default function Home() {
         {/* Pause Overlay */}
         {gameState === 'paused' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-blue-400 mb-8">暂停</h1>
+            <h1 className="text-4xl font-bold text-blue-400 mb-8">{t('paused')}</h1>
             <div className="flex flex-col gap-4">
               <button
                 onClick={resumeGame}
                 className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
               >
-                继续游戏
+                {t('resumeGame')}
               </button>
               <button
                 onClick={goToMainMenu}
                 className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded text-xl transition"
               >
-                返回主菜单
+                {t('returnToMenu')}
               </button>
             </div>
-            <p className="text-gray-400 mt-4">按 P 键继续</p>
+            <p className="text-gray-400 mt-4">{t('pressPToResume')}</p>
           </div>
         )}
 
         {/* Game Over Overlay */}
         {gameState === 'gameover' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-red-500 mb-4">游戏结束</h1>
-            <p className="text-white mb-2">最终得分: {score}</p>
-            <p className="text-gray-400 mb-8">到达关卡: {level}</p>
+            <h1 className="text-4xl font-bold text-red-500 mb-4">{t('gameOver')}</h1>
+            <p className="text-white mb-2">{t('finalScore')}: {score}</p>
+            <p className="text-gray-400 mb-8">{t('reachedLevel')}: {level}</p>
             <div className="flex flex-col gap-4">
               <button
                 onClick={restartGame}
                 className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
               >
-                重新开始
+                {t('restart')}
               </button>
               <button
                 onClick={goToMainMenu}
                 className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded text-xl transition"
               >
-                返回主菜单
+                {t('returnToMenu')}
               </button>
             </div>
           </div>
@@ -376,20 +385,20 @@ export default function Home() {
         {/* Victory Overlay */}
         {gameState === 'victory' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
-            <h1 className="text-4xl font-bold text-yellow-400 mb-4">恭喜过关!</h1>
-            <p className="text-white mb-2">最终得分: {score}</p>
+            <h1 className="text-4xl font-bold text-yellow-400 mb-4">{t('victory')}</h1>
+            <p className="text-white mb-2">{t('finalScore')}: {score}</p>
             <div className="flex flex-col gap-4">
               <button
                 onClick={restartGame}
                 className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
               >
-                再玩一次
+                {t('playAgain')}
               </button>
               <button
                 onClick={goToMainMenu}
                 className="px-8 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded text-xl transition"
               >
-                返回主菜单
+                {t('returnToMenu')}
               </button>
             </div>
           </div>

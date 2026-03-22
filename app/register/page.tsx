@@ -4,10 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/src/lib/auth-context'
+import { useLanguage } from '@/src/lib/i18n'
+import { LanguageToggle } from '@/src/components/LanguageToggle'
 
 export default function RegisterPage() {
   const router = useRouter()
   const { signUp } = useAuth()
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -20,12 +23,12 @@ export default function RegisterPage() {
     setError('')
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致')
+      setError(t('passwordMismatch'))
       return
     }
 
     if (password.length < 6) {
-      setError('密码长度至少6位')
+      setError(t('passwordTooShort'))
       return
     }
 
@@ -37,7 +40,7 @@ export default function RegisterPage() {
       setError(error)
       setLoading(false)
     } else {
-      alert('注册成功！请登录')
+      alert(t('registrationSuccess'))
       router.push('/login')
     }
   }
@@ -46,7 +49,10 @@ export default function RegisterPage() {
     <main className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-gray-800 rounded-lg p-8 border border-gray-700">
-          <h1 className="text-3xl font-bold text-yellow-400 text-center mb-8">注册</h1>
+          <div className="flex justify-end mb-4">
+            <LanguageToggle />
+          </div>
+          <h1 className="text-3xl font-bold text-yellow-400 text-center mb-8">{t('register')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -56,19 +62,19 @@ export default function RegisterPage() {
             )}
 
             <div>
-              <label className="block text-gray-400 mb-2">用户名</label>
+              <label className="block text-gray-400 mb-2">{t('username')}</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
-                placeholder="显示名称"
+                placeholder={t('username')}
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 mb-2">邮箱</label>
+              <label className="block text-gray-400 mb-2">{t('email')}</label>
               <input
                 type="email"
                 value={email}
@@ -80,7 +86,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-gray-400 mb-2">密码</label>
+              <label className="block text-gray-400 mb-2">{t('password')}</label>
               <input
                 type="password"
                 value={password}
@@ -88,19 +94,19 @@ export default function RegisterPage() {
                 required
                 minLength={6}
                 className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
-                placeholder="至少6位"
+                placeholder={t('passwordTooShort')}
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 mb-2">确认密码</label>
+              <label className="block text-gray-400 mb-2">{t('confirmPassword')}</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 className="w-full px-4 py-3 bg-gray-700 rounded border border-gray-600 text-white"
-                placeholder="再次输入密码"
+                placeholder={t('confirmPassword')}
               />
             </div>
 
@@ -109,20 +115,20 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white font-bold rounded transition"
             >
-              {loading ? '注册中...' : '注册'}
+              {loading ? t('registering') : t('registerButton')}
             </button>
           </form>
 
           <p className="text-center text-gray-400 mt-6">
-            已有账号？{' '}
+            {t('hasAccount')}{' '}
             <Link href="/login" className="text-yellow-400 hover:underline">
-              登录
+              {t('login')}
             </Link>
           </p>
 
           <p className="text-center text-gray-400 mt-4">
             <Link href="/" className="text-gray-500 hover:underline">
-              返回首页（游客模式）
+              {t('backToHome')}
             </Link>
           </p>
         </div>

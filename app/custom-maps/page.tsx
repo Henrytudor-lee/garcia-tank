@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CustomMap, TileType } from '@/src/game/types'
 import { useAuth } from '@/src/lib/auth-context'
+import { useLanguage } from '@/src/lib/i18n'
 import { getUserMaps, deleteCustomMap } from '@/src/lib/maps'
+import { LanguageToggle } from '@/src/components/LanguageToggle'
 
 export default function CustomMapsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { t } = useLanguage()
   const [maps, setMaps] = useState<CustomMap[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -34,7 +37,7 @@ export default function CustomMapsPage() {
   }
 
   const deleteMap = async (mapId: string) => {
-    if (!confirm('确定要删除这个地图吗？')) return
+    if (!confirm(t('confirmDelete'))) return
 
     if (user) {
       // Delete from database
@@ -53,7 +56,7 @@ export default function CustomMapsPage() {
 
   const createNewMap = () => {
     if (!user) {
-      alert('请先登录后才能创建自定义地图')
+      alert(t('pleaseLoginToCreateMap'))
       router.push('/login')
       return
     }
@@ -82,7 +85,7 @@ export default function CustomMapsPage() {
   if (authLoading || loading) {
     return (
       <main className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">加载中...</div>
+        <div className="text-white">{t('loading')}</div>
       </main>
     )
   }
@@ -92,31 +95,34 @@ export default function CustomMapsPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-yellow-400">自定义地图</h1>
+            <h1 className="text-3xl font-bold text-yellow-400">{t('customMapsTitle')}</h1>
             {user && (
               <p className="text-gray-400 text-sm mt-1">
-                登录账号: {user.email}
+                {t('loggedInAs')}: {user.email}
               </p>
             )}
           </div>
-          <button
-            onClick={goBack}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
-          >
-            返回
-          </button>
+          <div className="flex gap-2">
+            <LanguageToggle />
+            <button
+              onClick={goBack}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+            >
+              {t('returnToMenu')}
+            </button>
+          </div>
         </div>
 
         {!user && (
           <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-6">
             <p className="text-yellow-400">
-              您当前是游客模式。登录后可保存地图到云端，更换设备后也能继续使用。
+              {t('guestModeNotice')}
             </p>
             <button
               onClick={() => router.push('/login')}
               className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
             >
-              登录
+              {t('login')}
             </button>
           </div>
         )}
@@ -126,14 +132,14 @@ export default function CustomMapsPage() {
             onClick={createNewMap}
             className="px-6 py-3 bg-green-600 hover:bg-green-500 rounded font-bold"
           >
-            创建新地图
+            {t('createNewMap')}
           </button>
         </div>
 
         {maps.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
-            <p className="text-xl mb-4">还没有自定义地图</p>
-            <p>点击"创建新地图"开始制作</p>
+            <p className="text-xl mb-4">{t('noCustomMaps')}</p>
+            <p>{t('clickToCreate')}</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -146,10 +152,10 @@ export default function CustomMapsPage() {
                   <div>
                     <h3 className="text-xl font-bold text-yellow-400">{map.name}</h3>
                     <p className="text-gray-400 text-sm">
-                      大小: {map.width} x {map.height} |
-                      墙体数: {getTileCount(map)} |
-                      玩家出生点: ({map.playerSpawn.x}, {map.playerSpawn.y}) |
-                      基地位置: ({map.basePosition.x}, {map.basePosition.y})
+                      {t('size')}: {map.width} x {map.height} |
+                      {t('walls')}: {getTileCount(map)} |
+                      {t('playerSpawn')}: ({map.playerSpawn.x}, {map.playerSpawn.y}) |
+                      {t('basePosition')}: ({map.basePosition.x}, {map.basePosition.y})
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -157,13 +163,13 @@ export default function CustomMapsPage() {
                       onClick={() => editMap(map.id)}
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded"
                     >
-                      编辑
+                      {t('edit')}
                     </button>
                     <button
                       onClick={() => deleteMap(map.id)}
                       className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded"
                     >
-                      删除
+                      {t('delete')}
                     </button>
                   </div>
                 </div>

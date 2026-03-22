@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CustomMap, TileType, Position } from '@/src/game/types'
 import { useAuth } from '@/src/lib/auth-context'
+import { useLanguage } from '@/src/lib/i18n'
 import { getMapById, saveCustomMap, updateCustomMap } from '@/src/lib/maps'
+import { LanguageToggle } from '@/src/components/LanguageToggle'
 
 type EditMode = 'wall' | 'player' | 'base' | 'enemy' | 'erase'
 
@@ -21,6 +23,7 @@ function MapEditorContent() {
   const searchParams = useSearchParams()
   const mapId = searchParams.get('id')
   const { user, loading: authLoading } = useAuth()
+  const { t } = useLanguage()
 
   const [mapName, setMapName] = useState('新地图')
   const [mapWidth, setMapWidth] = useState(13)
@@ -104,7 +107,7 @@ function MapEditorContent() {
   // Handle map size change
   const handleSizeChange = () => {
     if (mapWidth < 8 || mapWidth > 20 || mapHeight < 8 || mapHeight > 20) {
-      alert('地图大小必须在 8 到 20 之间')
+      alert(t('mapSizeError'))
       return
     }
 
@@ -277,7 +280,7 @@ function MapEditorContent() {
   // Save map
   const saveMap = async () => {
     if (!mapName.trim()) {
-      alert('请输入地图名称')
+      alert(t('enterMapName'))
       return
     }
 
@@ -332,7 +335,7 @@ function MapEditorContent() {
   if (authLoading || loading) {
     return (
       <main className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">加载中...</div>
+        <div className="text-white">{t('loading')}</div>
       </main>
     )
   }
@@ -343,24 +346,27 @@ function MapEditorContent() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-yellow-400">
-              {mapId ? '编辑地图' : '创建地图'}
+              {mapId ? t('editMap') : t('createMap')}
             </h1>
             {user && (
-              <p className="text-gray-400 text-sm">登录账号: {user.email}</p>
+              <p className="text-gray-400 text-sm">{t('loggedInAs')}: {user.email}</p>
             )}
           </div>
-          <button
-            onClick={goBack}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
-          >
-            返回
-          </button>
+          <div className="flex gap-2">
+            <LanguageToggle />
+            <button
+              onClick={goBack}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+            >
+              {t('returnToMenu')}
+            </button>
+          </div>
         </div>
 
         {!user && (
           <div className="bg-yellow-900/30 border border-yellow-600 p-4 rounded mb-4">
             <p className="text-yellow-400 text-sm">
-              您当前是游客模式。登录后可保存地图到云端，更换设备后也能继续使用。
+              {t('guestModeNotice')}
             </p>
           </div>
         )}
@@ -368,11 +374,11 @@ function MapEditorContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left panel - Settings */}
           <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-lg font-bold mb-4">地图设置</h2>
+            <h2 className="text-lg font-bold mb-4">{t('mapSettings')}</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm mb-1">地图名称</label>
+                <label className="block text-sm mb-1">{t('mapName')}</label>
                 <input
                   type="text"
                   value={mapName}
@@ -383,7 +389,7 @@ function MapEditorContent() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-1">宽度 (8-20)</label>
+                  <label className="block text-sm mb-1">{t('width')} (8-20)</label>
                   <input
                     type="number"
                     min={8}
@@ -395,7 +401,7 @@ function MapEditorContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">高度 (8-20)</label>
+                  <label className="block text-sm mb-1">{t('height')} (8-20)</label>
                   <input
                     type="number"
                     min={8}
@@ -412,18 +418,18 @@ function MapEditorContent() {
                 onClick={saveMap}
                 className="w-full px-4 py-3 bg-green-600 hover:bg-green-500 rounded font-bold"
               >
-                保存地图
+                {t('saveMap')}
               </button>
             </div>
 
-            <h2 className="text-lg font-bold mt-6 mb-4">工具</h2>
+            <h2 className="text-lg font-bold mt-6 mb-4">{t('tools')}</h2>
 
             <div className="space-y-2">
               <button
                 onClick={() => setEditMode('wall')}
                 className={`w-full px-4 py-2 rounded ${editMode === 'wall' ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
-                放置墙体
+                {t('placeWall')}
               </button>
 
               {editMode === 'wall' && (
@@ -433,28 +439,28 @@ function MapEditorContent() {
                     className={`px-3 py-2 rounded ${selectedTileType === TileType.BRICK ? 'bg-blue-600' : 'bg-gray-600'}`}
                     style={{ backgroundColor: selectedTileType === TileType.BRICK ? undefined : '#8B4513' }}
                   >
-                    砖墙
+                    {t('brick')}
                   </button>
                   <button
                     onClick={() => setSelectedTileType(TileType.STEEL)}
                     className={`px-3 py-2 rounded ${selectedTileType === TileType.STEEL ? 'bg-blue-600' : 'bg-gray-600'}`}
                     style={{ backgroundColor: selectedTileType === TileType.STEEL ? undefined : '#708090' }}
                   >
-                    铁墙
+                    {t('steel')}
                   </button>
                   <button
                     onClick={() => setSelectedTileType(TileType.GRASS)}
                     className={`px-3 py-2 rounded ${selectedTileType === TileType.GRASS ? 'bg-blue-600' : 'bg-gray-600'}`}
                     style={{ backgroundColor: selectedTileType === TileType.GRASS ? undefined : '#228B22' }}
                   >
-                    草地
+                    {t('grass')}
                   </button>
                   <button
                     onClick={() => setSelectedTileType(TileType.WATER)}
                     className={`px-3 py-2 rounded ${selectedTileType === TileType.WATER ? 'bg-blue-600' : 'bg-gray-600'}`}
                     style={{ backgroundColor: selectedTileType === TileType.WATER ? undefined : '#1E90FF' }}
                   >
-                    水域
+                    {t('water')}
                   </button>
                 </div>
               )}
@@ -463,37 +469,37 @@ function MapEditorContent() {
                 onClick={() => setEditMode('player')}
                 className={`w-full px-4 py-2 rounded ${editMode === 'player' ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
-                设置玩家出生点
+                {t('setPlayerSpawn')}
               </button>
 
               <button
                 onClick={() => setEditMode('base')}
                 className={`w-full px-4 py-2 rounded ${editMode === 'base' ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
-                设置基地位置
+                {t('setBasePosition')}
               </button>
 
               <button
                 onClick={() => setEditMode('enemy')}
                 className={`w-full px-4 py-2 rounded ${editMode === 'enemy' ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
-                添加敌方出生点
+                {t('addEnemySpawn')}
               </button>
 
               <button
                 onClick={() => setEditMode('erase')}
                 className={`w-full px-4 py-2 rounded ${editMode === 'erase' ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
-                橡皮擦 / 移除敌人生成点
+                {t('eraser')}
               </button>
             </div>
 
             <div className="mt-6 text-sm text-gray-400">
-              <p>提示：</p>
+              <p>{t('tips')}</p>
               <ul className="list-disc list-inside mt-2">
-                <li>点击画布放置</li>
-                <li>按住拖动连续绘制</li>
-                <li>右键点击移除敌人生成点</li>
+                <li>{t('tip1')}</li>
+                <li>{t('tip2')}</li>
+                <li>{t('tip3')}</li>
               </ul>
             </div>
           </div>
@@ -522,22 +528,22 @@ function MapEditorContent() {
             <div className="mt-4 flex flex-wrap gap-4 justify-center text-sm">
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-green-500"></div>
-                <span>玩家出生点</span>
+                <span>{t('playerSpawn')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-yellow-500"></div>
-                <span>基地</span>
+                <span>{t('basePosition')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-red-500"></div>
-                <span>敌方出生点 ({enemySpawns.length})</span>
+                <span>{t('enemySpawns')} ({enemySpawns.length})</span>
               </div>
             </div>
 
             {/* Info */}
             <div className="mt-4 text-center text-sm text-gray-400">
-              <p>地图尺寸: {mapWidth} x {mapHeight}</p>
-              <p>敌人生成点: {enemySpawns.length} 个</p>
+              <p>{t('mapSize')}: {mapWidth} x {mapHeight}</p>
+              <p>{t('enemySpawns')}: {enemySpawns.length} {t('enemies')}</p>
             </div>
           </div>
         </div>
@@ -547,8 +553,9 @@ function MapEditorContent() {
 }
 
 export default function MapEditorPage() {
+  const { t } = useLanguage()
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">加载中...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">{t('loading')}</div>}>
       <MapEditorContent />
     </Suspense>
   )
