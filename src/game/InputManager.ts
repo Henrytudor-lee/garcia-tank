@@ -18,7 +18,7 @@ export class InputManager {
 
   private handleKeyDown(e: KeyboardEvent) {
     // Prevent default for game keys
-    const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', 'p', 'P']
+    const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', 'p', 'P', '0']
     if (gameKeys.includes(e.key)) {
       e.preventDefault()
     }
@@ -60,6 +60,48 @@ export class InputManager {
   // Check if fire key is pressed
   isFiring(): boolean {
     return this.keys.has(' ') || this.keys.has('space') || this.keys.has('spacebar')
+  }
+
+  // Get movement direction for specific player
+  // playerIndex: 1 for WASD, 2 for Arrow keys
+  getMovementDirectionForPlayer(playerIndex: 1 | 2): Direction | null {
+    if (playerIndex === 1) {
+      // Player 1: WASD
+      const dir = this.isKeyPressed('w') || this.isKeyPressed('W')
+        ? Direction.UP
+        : this.isKeyPressed('s') || this.isKeyPressed('S')
+          ? Direction.DOWN
+          : this.isKeyPressed('a') || this.isKeyPressed('A')
+            ? Direction.LEFT
+            : this.isKeyPressed('d') || this.isKeyPressed('D')
+              ? Direction.RIGHT
+              : null
+      return dir
+    } else {
+      // Player 2: Arrow keys
+      const dir = this.isKeyPressed('arrowup')
+        ? Direction.UP
+        : this.isKeyPressed('arrowdown')
+          ? Direction.DOWN
+          : this.isKeyPressed('arrowleft')
+            ? Direction.LEFT
+            : this.isKeyPressed('arrowright')
+              ? Direction.RIGHT
+              : null
+      return dir
+    }
+  }
+
+  // Check if fire key is pressed for specific player
+  // playerIndex: 1 for Space, 2 for 0 (zero)
+  isFiringForPlayer(playerIndex: 1 | 2): boolean {
+    if (playerIndex === 1) {
+      // Player 1: Space
+      return this.keys.has(' ') || this.keys.has('space') || this.keys.has('spacebar')
+    } else {
+      // Player 2: 0 (zero)
+      return this.keys.has('0')
+    }
   }
 
   // Get all currently pressed keys (for debugging)

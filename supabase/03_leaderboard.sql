@@ -9,6 +9,7 @@ CREATE TABLE public.leaderboard (
   levels_completed INTEGER NOT NULL DEFAULT 1,
   map_id UUID REFERENCES public.custom_maps(id) ON DELETE SET NULL, -- 使用的地图ID
   map_name TEXT, -- 地图名称（冗余存储，方便查询）
+  game_mode TEXT NOT NULL DEFAULT 'single', -- 游戏模式：single(单人) 或 multiplayer(双人)
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -32,6 +33,7 @@ CREATE POLICY "Users can insert own score"
 CREATE INDEX idx_leaderboard_score ON public.leaderboard(score DESC);
 CREATE INDEX idx_leaderboard_user_id ON public.leaderboard(user_id);
 CREATE INDEX idx_leaderboard_created_at ON public.leaderboard(created_at DESC);
+CREATE INDEX idx_leaderboard_game_mode ON public.leaderboard(game_mode);
 
 -- 创建获取排行榜前10名的视图
 CREATE OR REPLACE VIEW public.leaderboard_top10 AS
@@ -41,6 +43,7 @@ SELECT
   l.levels_completed,
   l.map_name,
   l.email,
+  l.game_mode,
   l.created_at,
   u.username,
   u.avatar

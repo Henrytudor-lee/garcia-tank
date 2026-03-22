@@ -24,6 +24,9 @@ export const translations = {
     // Game controls
     controls: 'WASD / 方向键 移动',
     controls2: '空格键 射击 | P键 暂停',
+    multiplayerControls: '双人模式: 玩家1(WASD+空格) 玩家2(方向键+0)',
+    singlePlayer: '单人模式',
+    multiplayer: '双人模式',
 
     // Game states
     paused: '暂停',
@@ -103,6 +106,8 @@ export const translations = {
     // Leaderboard page
     leaderboardTitle: '排行榜',
     filterMap: '筛选地图',
+    filterMode: '筛选模式',
+    allModes: '全部',
     allMaps: '全部地图',
     totalRecords: '共 条记录',
     noRecords: '暂无记录',
@@ -110,6 +115,7 @@ export const translations = {
     rank: '排名',
     score: '分数',
     map: '地图',
+    mode: '模式',
     date: '日期',
     
     // Auth errors
@@ -142,6 +148,9 @@ export const translations = {
     // Game controls
     controls: 'WASD / Arrow Keys to Move',
     controls2: 'Space to Fire | P to Pause',
+    multiplayerControls: 'Multiplayer: Player1(WASD+Space) Player2(Arrows+0)',
+    singlePlayer: 'Single Player',
+    multiplayer: 'Multiplayer',
 
     // Game states
     paused: 'Paused',
@@ -221,6 +230,8 @@ export const translations = {
     // Leaderboard page
     leaderboardTitle: 'Leaderboard',
     filterMap: 'Filter by Map',
+    filterMode: 'Filter by Mode',
+    allModes: 'All',
     allMaps: 'All Maps',
     totalRecords: 'records',
     noRecords: 'No records yet',
@@ -228,6 +239,7 @@ export const translations = {
     rank: 'Rank',
     score: 'Score',
     map: 'Map',
+    mode: 'Mode',
     date: 'Date',
     
     // Auth errors

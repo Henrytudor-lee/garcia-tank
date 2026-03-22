@@ -45,6 +45,7 @@ export interface DbLeaderboard {
   levels_completed: number
   map_id: string | null
   map_name: string | null
+  game_mode: string
   created_at: string
   username?: string
   avatar?: string

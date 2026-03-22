@@ -33,6 +33,12 @@ export enum GameState {
   VICTORY = 'victory',
 }
 
+// Game mode
+export enum GameMode {
+  SINGLE = 'single',
+  MULTIPLAYER = 'multiplayer',
+}
+
 // Position interface
 export interface Position {
   x: number
@@ -131,4 +137,5 @@ export interface LeaderboardEntry {
   country?: string
   mapId?: string
   mapName?: string
+  gameMode?: 'single' | 'multiplayer'
 }

@@ -10,6 +10,7 @@ export class TankSystem {
   private idCounter: number = 0
   private onFireCallback: ((bullet: any) => void) | null = null
   private customPlayerSpawn: Position | null = null
+  private customPlayer2Spawn: Position | null = null
   private customEnemySpawns: Position[] = []
 
   constructor(canvas: HTMLCanvasElement, mapSystem: MapSystem) {
@@ -24,19 +25,21 @@ export class TankSystem {
   }
 
   // Set custom spawn positions
-  setCustomSpawns(playerSpawn: Position, enemySpawns: Position[]) {
+  setCustomSpawns(playerSpawn: Position, enemySpawns: Position[], player2Spawn?: Position) {
     this.customPlayerSpawn = playerSpawn
+    this.customPlayer2Spawn = player2Spawn || null
     this.customEnemySpawns = enemySpawns
   }
 
   // Clear custom spawns
   clearCustomSpawns() {
     this.customPlayerSpawn = null
+    this.customPlayer2Spawn = null
     this.customEnemySpawns = []
   }
 
-  // Create player tank
-  createPlayer(): Tank {
+  // Create player 1 tank (green)
+  createPlayer(color?: string): Tank {
     const id = this.generateId()
     const config = GAME_CONFIG.TANK_CONFIGS[TankType.PLAYER]
 
@@ -70,7 +73,49 @@ export class TankSystem {
       lastFireTime: 0,
       isPlayer: true,
       isMoving: false,
-      spriteColor: config.color,
+      spriteColor: color || config.color,
+    }
+
+    this.tanks.set(id, tank)
+    return tank
+  }
+
+  // Create player 2 tank (yellow)
+  createPlayer2(color?: string): Tank {
+    const id = this.generateId()
+    const config = GAME_CONFIG.TANK_CONFIGS[TankType.PLAYER]
+
+    // Get tile size from map system
+    const tileSize = this.mapSystem.getTileSize()
+
+    // Use custom spawn position if available, otherwise use default
+    let spawnX: number, spawnY: number
+    if (this.customPlayer2Spawn) {
+      spawnX = this.customPlayer2Spawn.x * tileSize + 2
+      spawnY = this.customPlayer2Spawn.y * tileSize + 2
+    } else {
+      // Default spawn at tile (8, 11)
+      spawnX = 8 * tileSize + 2
+      spawnY = 11 * tileSize + 2
+    }
+
+    // Get tank size based on tile size (slightly smaller than tile)
+    const tankSize = tileSize * 0.9
+
+    const tank: Tank = {
+      id,
+      type: TankType.PLAYER,
+      position: { x: spawnX, y: spawnY },
+      size: { width: tankSize, height: tankSize },
+      direction: Direction.UP,
+      speed: config.speed,
+      hp: config.hp,
+      maxHp: config.hp,
+      fireCooldown: config.fireCooldown,
+      lastFireTime: 0,
+      isPlayer: true,
+      isMoving: false,
+      spriteColor: color || GAME_CONFIG.PLAYER2_COLOR || '#FFFF00',
     }
 
     this.tanks.set(id, tank)
@@ -269,13 +314,39 @@ export class TankSystem {
     return Array.from(this.tanks.values())
   }
 
-  // Get player tank
+  // Get all player tanks (for multiplayer)
+  getPlayers(): Tank[] {
+    return Array.from(this.tanks.values()).filter(t => t.isPlayer)
+  }
+
+  // Get player tank (returns first player for backward compatibility)
   getPlayer(): Tank | undefined {
     const allTanks = Array.from(this.tanks.values())
     for (const tank of allTanks) {
       if (tank.isPlayer) return tank
     }
     return undefined
+  }
+
+  // Get player 1 tank (green)
+  getPlayer1(): Tank | undefined {
+    const players = this.getPlayers()
+    // Player 1 is the one at lower x position (left side)
+    return players.reduce((prev, curr) => {
+      if (!prev) return curr
+      return curr.position.x < prev.position.x ? curr : prev
+    }, undefined as Tank | undefined)
+  }
+
+  // Get player 2 tank (yellow)
+  getPlayer2(): Tank | undefined {
+    const players = this.getPlayers()
+    if (players.length < 2) return undefined
+    // Player 2 is the one at higher x position (right side)
+    return players.reduce((prev, curr) => {
+      if (!prev) return curr
+      return curr.position.x > prev.position.x ? curr : prev
+    }, undefined as Tank | undefined)
   }
 
   // Get enemy tanks
@@ -398,6 +469,7 @@ export class TankSystem {
     this.tanks.clear()
     this.idCounter = 0
     this.customPlayerSpawn = null
+    this.customPlayer2Spawn = null
     this.customEnemySpawns = []
   }
 

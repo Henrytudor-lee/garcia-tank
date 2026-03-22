@@ -12,6 +12,9 @@ export const GAME_CONFIG = {
   PLAYER_SPEED: 2,
   PLAYER_FIRE_COOLDOWN: 500, // ms
   PLAYER_LIVES: 3,
+  PLAYER2_COLOR: '#FFFF00', // Yellow for player 2
+  PLAYER2_SPAWN_X: 8,
+  PLAYER2_SPAWN_Y: 11,
 
   // Bullet settings
   BULLET_SPEED: 5,
@@ -30,7 +33,7 @@ export const GAME_CONFIG = {
   TANK_CONFIGS: {
     [TankType.PLAYER]: {
       speed: 2,
-      hp: 1,
+      hp: 1, // Each hit kills one life
       fireCooldown: 500,
       color: '#00ff00', // Green
     },

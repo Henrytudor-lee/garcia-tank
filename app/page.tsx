@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { GameEngine } from '@/src/game/GameEngine'
-import { CustomMap } from '@/src/game/types'
+import { CustomMap, GameMode } from '@/src/game/types'
 import { useAuth } from '@/src/lib/auth-context'
 import { useLanguage } from '@/src/lib/i18n'
 import { getUserMaps, saveCustomMap } from '@/src/lib/maps'
@@ -22,11 +22,13 @@ export default function Home() {
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'paused' | 'gameover' | 'victory'>('menu')
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(3)
+  const [playerLives, setPlayerLives] = useState({ player1: 3, player2: 3 }) // For multiplayer mode
   const [level, setLevel] = useState(1)
   const [selectedMap, setSelectedMap] = useState<CustomMap | null>(null)
   const [customMaps, setCustomMaps] = useState<CustomMap[]>([])
   const [canvasSize, setCanvasSize] = useState(DEFAULT_MAP_SIZE * TILE_SIZE)
   const [currentMapName, setCurrentMapName] = useState('')
+  const [gameMode, setGameMode] = useState<GameMode>(GameMode.SINGLE)
 
   // Initialize after mount to avoid hydration mismatch
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function Home() {
   const userRef = useRef(user)
   const currentMapNameRef = useRef(t('defaultMap'))
   const currentMapIdRef = useRef<string | undefined>(undefined)
+  const gameModeRef = useRef<GameMode>(GameMode.SINGLE)
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -61,6 +64,10 @@ export default function Home() {
   useEffect(() => {
     currentMapIdRef.current = currentMapId
   }, [currentMapId])
+
+  useEffect(() => {
+    gameModeRef.current = gameMode
+  }, [gameMode])
 
   // Load maps from database if logged in, otherwise from localStorage
   useEffect(() => {
@@ -90,6 +97,9 @@ export default function Home() {
       setScore(newScore)
     })
     game.on('livesUpdate', (newLives: number) => setLives(newLives))
+    game.on('multiplayerLivesUpdate', ({ player1, player2 }: { player1: number, player2: number }) => {
+      setPlayerLives({ player1, player2 })
+    })
     game.on('levelUpdate', (newLevel: number) => setLevel(newLevel))
     game.on('stateChange', (state: string) => {
       console.log('Game state changed:', state, 'current score:', scoreRef.current)
@@ -97,11 +107,11 @@ export default function Home() {
       // Save score to leaderboard on game over (always save, even if 0)
       if (state === 'gameover') {
         console.log('Calling saveToLeaderboard, score:', scoreRef.current, 'level:', levelRef.current)
-        saveToLeaderboard(scoreRef.current, levelRef.current, currentMapNameRef.current, currentMapIdRef.current)
+        saveToLeaderboard(scoreRef.current, levelRef.current, currentMapNameRef.current, currentMapIdRef.current, gameModeRef.current)
       }
       // Save score on victory too
       if (state === 'victory') {
-        saveToLeaderboard(scoreRef.current, 5, currentMapNameRef.current, currentMapIdRef.current)
+        saveToLeaderboard(scoreRef.current, 5, currentMapNameRef.current, currentMapIdRef.current, gameModeRef.current)
       }
     })
 
@@ -113,8 +123,8 @@ export default function Home() {
   }, [])
 
   // Save score to leaderboard (database if logged in, localStorage otherwise)
-  const saveToLeaderboard = async (finalScore: number, levelsCompleted: number, mapName?: string, mapId?: string) => {
-    console.log('saveToLeaderboard called:', { finalScore, levelsCompleted, mapName, user: userRef.current?.email, userId: userRef.current?.id })
+  const saveToLeaderboard = async (finalScore: number, levelsCompleted: number, mapName?: string, mapId?: string, gameMode: GameMode = GameMode.SINGLE) => {
+    console.log('saveToLeaderboard called:', { finalScore, levelsCompleted, mapName, user: userRef.current?.email, userId: userRef.current?.id, gameMode })
 
     // Don't save if score is 0
     if (finalScore <= 0) {
@@ -130,7 +140,8 @@ export default function Home() {
         levelsCompleted,
         mapId,
         mapName: mapName || '默认地图',
-        email: userRef.current?.email || null
+        email: userRef.current?.email || null,
+        gameMode: gameMode || 'single'
       }
       const stored = localStorage.getItem('leaderboard')
       let leaderboard: any[] = stored ? JSON.parse(stored) : []
@@ -149,6 +160,7 @@ export default function Home() {
         email: userRef.current.email,
         mapId,
         mapName: mapName || '默认地图',
+        gameMode: gameMode || 'single'
       })
       console.log('addScore result:', result)
       // If database save failed (e.g., session expired), fallback to localStorage
@@ -161,8 +173,13 @@ export default function Home() {
     }
   }
 
-  const startGame = async (customMap?: CustomMap) => {
+  const startGame = async (customMap?: CustomMap, mode: GameMode = GameMode.SINGLE) => {
     if (gameRef.current) {
+      // Set game mode before starting
+      gameRef.current.setGameMode(mode)
+      setGameMode(mode)
+      gameModeRef.current = mode  // Update ref immediately
+
       const mapSize = customMap ? Math.max(customMap.width, customMap.height) : DEFAULT_MAP_SIZE
       const newSize = mapSize * TILE_SIZE
       setCanvasSize(newSize)
@@ -262,7 +279,14 @@ export default function Home() {
               <span className="text-green-400 font-bold">LEVEL: {level}</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-red-400 font-bold">LIVES: {lives === 0 ? '0' : '❤️'.repeat(lives)}</span>
+              {gameMode === GameMode.MULTIPLAYER ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-green-400 font-bold">P1: {playerLives.player1 === 0 ? '💀' : '❤️'.repeat(playerLives.player1)}</span>
+                  <span className="text-yellow-400 font-bold">P2: {playerLives.player2 === 0 ? '💀' : '❤️'.repeat(playerLives.player2)}</span>
+                </div>
+              ) : (
+                <span className="text-red-400 font-bold">LIVES: {lives === 0 ? '0' : '❤️'.repeat(lives)}</span>
+              )}
             </div>
           </div>
         )}
@@ -283,42 +307,49 @@ export default function Home() {
               {t('tankBattle')}
             </h1>
             <p className="text-gray-400 mb-2">{t('controls')}</p>
-            <p className="text-gray-400 mb-8">{t('controls2')}</p>
+            <p className="text-gray-400 mb-2">{t('controls2')}</p>
+            <p className="text-blue-400 mb-4 text-sm">
+              {t('multiplayerControls') || '双人模式: 玩家1(WASD+空格) 玩家2(方向键+0)'}
+            </p>
 
             <div className="flex flex-col gap-4">
-              <button
-                onClick={() => startGame()}
-                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
-              >
-                {t('startGame')}
-              </button>
-
-              {customMaps.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-gray-400 text-center text-sm">{t('selectMap')}:</p>
-                  <select
-                    onChange={(e) => {
+              {/* Map Selection */}
+              <div className="flex flex-col gap-2">
+                <p className="text-gray-400 text-center text-sm">{t('selectMap')}:</p>
+                <select
+                  onChange={(e) => {
+                    if (e.target.value === 'default') {
+                      setSelectedMap(null)
+                    } else {
                       const map = customMaps.find(m => m.id === e.target.value)
                       setSelectedMap(map || null)
-                    }}
-                    className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
-                    value={selectedMap?.id || ''}
-                  >
-                    <option value="">{t('selectMapPlaceholder')}</option>
-                    {customMaps.map(map => (
-                      <option key={map.id} value={map.id}>{map.name}</option>
-                    ))}
-                  </select>
-                  {selectedMap && (
-                    <button
-                      onClick={() => startGame(selectedMap)}
-                      className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xl transition"
-                    >
-                      {t('useMapStart')}
-                    </button>
-                  )}
-                </div>
-              )}
+                    }
+                  }}
+                  className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
+                  value={selectedMap?.id || 'default'}
+                >
+                  <option value="default">{t('defaultMap')}</option>
+                  {customMaps.map(map => (
+                    <option key={map.id} value={map.id}>{map.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Single Player Mode */}
+              <button
+                onClick={() => startGame(selectedMap || undefined, GameMode.SINGLE)}
+                className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xl transition"
+              >
+                {t('singlePlayer') || '单人模式'}
+              </button>
+
+              {/* Multiplayer Mode */}
+              <button
+                onClick={() => startGame(selectedMap || undefined, GameMode.MULTIPLAYER)}
+                className="px-8 py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded text-xl transition"
+              >
+                {t('multiplayer') || '双人模式'}
+              </button>
 
               <button
                 onClick={goToCustomMaps}

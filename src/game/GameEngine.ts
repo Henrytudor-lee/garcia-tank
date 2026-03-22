@@ -7,7 +7,7 @@ import { Collision } from './Collision'
 import { EnemyAI } from './EnemyAI'
 import { ScoreSystem } from './ScoreSystem'
 import { LevelSystem } from './LevelSystem'
-import { GameState, TankType, Direction, CustomMap } from './types'
+import { GameState, GameMode, TankType, Direction, CustomMap } from './types'
 import { GAME_CONFIG } from '@/src/config/gameConfig'
 
 type GameEventCallback = (...args: any[]) => void
@@ -26,7 +26,13 @@ export class GameEngine {
   private levelSystem: LevelSystem
 
   private gameState: GameState = GameState.MENU
+  private gameMode: GameMode = GameMode.SINGLE
   private playerId: string | null = null
+  private player2Id: string | null = null
+  private player1Lives: number = 3 // Player 1 remaining lives
+  private player2Lives: number = 3 // Player 2 remaining lives
+  private player1Dead: boolean = false // Player 1 permanently dead (lost all lives)
+  private player2Dead: boolean = false // Player 2 permanently dead (lost all lives)
   private events: Map<string, GameEventCallback[]> = new Map()
   private lastPlayerFireCheck: number = 0
   private pauseKeyWasPressed: boolean = false
@@ -66,6 +72,16 @@ export class GameEngine {
     this.render()
   }
 
+  // Set game mode (single or multiplayer)
+  setGameMode(mode: GameMode) {
+    this.gameMode = mode
+  }
+
+  // Get game mode
+  getGameMode(): GameMode {
+    return this.gameMode
+  }
+
   // Start game
   start(canvasSize?: number) {
     // Allow start from MENU, PAUSED, GAMEOVER, or VICTORY states
@@ -91,13 +107,26 @@ export class GameEngine {
     this.scoreSystem.reset()
     this.levelSystem.reset()
 
-    // Create player
+    // Initialize player lives and death status
+    this.player1Lives = GAME_CONFIG.PLAYER_LIVES
+    this.player2Lives = GAME_CONFIG.PLAYER_LIVES
+    this.player1Dead = false
+    this.player2Dead = false
+
+    // Create player(s)
     const player = this.tankSystem.createPlayer()
     this.playerId = player.id
+
+    // Create player 2 for multiplayer mode
+    if (this.gameMode === GameMode.MULTIPLAYER) {
+      const player2 = this.tankSystem.createPlayer2()
+      this.player2Id = player2.id
+    }
 
     // Update UI
     this.emit('scoreUpdate', this.scoreSystem.getScore())
     this.emit('livesUpdate', this.scoreSystem.getLives())
+    this.emit('multiplayerLivesUpdate', { player1: this.player1Lives, player2: this.player2Lives })
     this.emit('levelUpdate', this.levelSystem.getCurrentLevel())
 
     this.gameState = GameState.PLAYING
@@ -141,12 +170,19 @@ export class GameEngine {
     // Load custom map
     this.mapSystem.loadCustomMap(customMap)
 
-    // Set custom spawn positions
-    this.tankSystem.setCustomSpawns(customMap.playerSpawn, customMap.enemySpawns)
+    // Set custom spawn positions (including player2 if available)
+    const player2Spawn = (customMap as any).player2Spawn
+    this.tankSystem.setCustomSpawns(customMap.playerSpawn, customMap.enemySpawns, player2Spawn)
 
     // Create player
     const player = this.tankSystem.createPlayer()
     this.playerId = player.id
+
+    // Create player 2 for multiplayer mode
+    if (this.gameMode === GameMode.MULTIPLAYER) {
+      const player2 = this.tankSystem.createPlayer2()
+      this.player2Id = player2.id
+    }
 
     // Update UI
     this.emit('scoreUpdate', this.scoreSystem.getScore())
@@ -203,30 +239,49 @@ export class GameEngine {
     this.emit('levelUpdate', this.levelSystem.getCurrentLevel())
   }
 
-  // Update player
+  // Update player(s)
   private updatePlayer() {
-    if (!this.playerId) {
-      return
+    // Update player 1 (controlled by WASD + Space)
+    if (this.playerId) {
+      const player1 = this.tankSystem.getTank(this.playerId)
+      if (player1) {
+        // Get movement direction for player 1 (WASD)
+        const direction = this.inputManager.getMovementDirectionForPlayer(1)
+        if (direction !== null) {
+          this.tankSystem.moveTank(player1.id, direction)
+        } else {
+          player1.isMoving = false
+        }
+
+        // Handle firing for player 1 (Space)
+        if (this.inputManager.isFiringForPlayer(1)) {
+          const result = this.tankSystem.fire(player1.id)
+          if (result.success && result.bullet) {
+            this.bulletSystem.addBullet(result.bullet)
+          }
+        }
+      }
     }
 
-    const player = this.tankSystem.getPlayer()
-    if (!player) {
-      return
-    }
+    // Update player 2 (controlled by Arrow keys + 0)
+    if (this.gameMode === GameMode.MULTIPLAYER && this.player2Id) {
+      const player2 = this.tankSystem.getTank(this.player2Id)
+      if (player2) {
+        // Get movement direction for player 2 (Arrow keys)
+        const direction = this.inputManager.getMovementDirectionForPlayer(2)
+        if (direction !== null) {
+          this.tankSystem.moveTank(player2.id, direction)
+        } else {
+          player2.isMoving = false
+        }
 
-    // Get movement direction
-    const direction = this.inputManager.getMovementDirection()
-    if (direction !== null) {
-      this.tankSystem.moveTank(player.id, direction)
-    } else {
-      player.isMoving = false
-    }
-
-    // Handle firing
-    if (this.inputManager.isFiring()) {
-      const result = this.tankSystem.fire(player.id)
-      if (result.success && result.bullet) {
-        this.bulletSystem.addBullet(result.bullet)
+        // Handle firing for player 2 (0 key)
+        if (this.inputManager.isFiringForPlayer(2)) {
+          const result = this.tankSystem.fire(player2.id)
+          if (result.success && result.bullet) {
+            this.bulletSystem.addBullet(result.bullet)
+          }
+        }
       }
     }
   }
@@ -327,15 +382,56 @@ export class GameEngine {
     this.tankSystem.removeTank(tankId)
 
     if (tank.isPlayer) {
-      // Player died
-      const lives = this.scoreSystem.loseLife()
-      if (lives > 0) {
-        // Respawn player
-        const player = this.tankSystem.createPlayer()
-        this.playerId = player.id
+      // Determine which player died
+      const isPlayer1 = tankId === this.playerId
+      const isPlayer2 = tankId === this.player2Id
+
+      // Decrease the corresponding player's lives
+      if (isPlayer1) {
+        this.player1Lives = Math.max(0, this.player1Lives - 1)
+        if (this.player1Lives <= 0) {
+          this.player1Dead = true // Permanently dead
+        }
+      } else if (isPlayer2) {
+        this.player2Lives = Math.max(0, this.player2Lives - 1)
+        if (this.player2Lives <= 0) {
+          this.player2Dead = true // Permanently dead
+        }
+      }
+
+      // Check if this player can respawn (must have lives remaining)
+      const canRespawn = (isPlayer1 && this.player1Lives > 0) || (isPlayer2 && this.player2Lives > 0)
+
+      if (canRespawn) {
+        // Respawn the player that died
+        if (isPlayer1) {
+          const player = this.tankSystem.createPlayer()
+          this.playerId = player.id
+        } else if (isPlayer2) {
+          const player2 = this.tankSystem.createPlayer2()
+          this.player2Id = player2.id
+        }
+      }
+
+      // Update UI with new lives
+      if (this.gameMode === GameMode.MULTIPLAYER) {
+        this.emit('multiplayerLivesUpdate', { player1: this.player1Lives, player2: this.player2Lives })
       } else {
-        // Game over
-        this.handleGameOver()
+        this.emit('livesUpdate', this.player1Lives)
+      }
+
+      // Check game over condition
+      if (this.gameMode === GameMode.MULTIPLAYER) {
+        // Game over only if both players are dead
+        const players = this.tankSystem.getPlayers()
+        if (players.length === 0) {
+          this.handleGameOver()
+        }
+      } else {
+        // Single player - game over when lives run out
+        if (this.player1Lives <= 0) {
+          this.handleGameOver()
+        }
       }
     } else {
       // Enemy destroyed - add score
@@ -373,9 +469,28 @@ export class GameEngine {
         this.tankSystem.reset()
         this.bulletSystem.reset()
 
-        // Respawn player with fresh tank
-        const player = this.tankSystem.createPlayer()
-        this.playerId = player.id
+        // Respawn player(s) only if they are not permanently dead
+        if (!this.player1Dead) {
+          const player = this.tankSystem.createPlayer()
+          this.playerId = player.id
+        } else {
+          this.playerId = null
+        }
+
+        // Create player 2 for multiplayer mode (only if not permanently dead)
+        if (this.gameMode === GameMode.MULTIPLAYER && !this.player2Dead) {
+          const player2 = this.tankSystem.createPlayer2()
+          this.player2Id = player2.id
+        } else {
+          this.player2Id = null
+        }
+
+        // Update UI with lives
+        if (this.gameMode === GameMode.MULTIPLAYER) {
+          this.emit('multiplayerLivesUpdate', { player1: this.player1Lives, player2: this.player2Lives })
+        } else {
+          this.emit('livesUpdate', this.player1Lives)
+        }
       }
     }
   }

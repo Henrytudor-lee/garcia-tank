@@ -19,6 +19,7 @@ interface LeaderboardEntry {
   email?: string
   userId?: string
   username?: string
+  gameMode?: 'single' | 'multiplayer'
 }
 
 export default function LeaderboardPage() {
@@ -29,6 +30,7 @@ export default function LeaderboardPage() {
   const [filteredEntries, setFilteredEntries] = useState<LeaderboardEntry[]>([])
   const [customMaps, setCustomMaps] = useState<CustomMap[]>([])
   const [selectedMap, setSelectedMap] = useState<string>('all')
+  const [selectedMode, setSelectedMode] = useState<string>('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     filterEntries()
-  }, [entries, selectedMap])
+  }, [entries, selectedMap, selectedMode])
 
   const loadData = async () => {
     setLoading(true)
@@ -56,6 +58,7 @@ export default function LeaderboardPage() {
       email: e.email || undefined,
       userId: e.user_id || undefined,
       username: e.username || undefined,
+      gameMode: (e.game_mode as 'single' | 'multiplayer') || 'single',
     }))
 
     // If database has entries, use them
@@ -86,12 +89,20 @@ export default function LeaderboardPage() {
   }
 
   const filterEntries = () => {
+    let filtered = entries
+
+    // Filter by mode
+    if (selectedMode !== 'all') {
+      filtered = filtered.filter(e => e.gameMode === selectedMode)
+    }
+
+    // Filter by map
     if (selectedMap === 'all') {
-      setFilteredEntries(entries)
+      setFilteredEntries(filtered)
     } else if (selectedMap === 'default') {
-      setFilteredEntries(entries.filter(e => !e.mapId || e.mapName === t('defaultMap')))
+      setFilteredEntries(filtered.filter(e => !e.mapId || e.mapName === t('defaultMap')))
     } else {
-      setFilteredEntries(entries.filter(e => e.mapId === selectedMap))
+      setFilteredEntries(filtered.filter(e => e.mapId === selectedMap))
     }
   }
 
@@ -142,7 +153,7 @@ export default function LeaderboardPage() {
         </div>
 
 
-        {/* Map Filter */}
+        {/* Map and Mode Filter */}
         <div className="mb-4 flex items-center gap-4 flex-wrap">
           <label className="text-gray-400">{t('filterMap')}:</label>
           <select
@@ -155,6 +166,16 @@ export default function LeaderboardPage() {
             {customMaps.map(map => (
               <option key={map.id} value={map.id}>{map.name}</option>
             ))}
+          </select>
+          <label className="text-gray-400">{t('filterMode') || '模式'}:</label>
+          <select
+            value={selectedMode}
+            onChange={(e) => setSelectedMode(e.target.value)}
+            className="px-4 py-2 bg-gray-800 text-white rounded border border-gray-600"
+          >
+            <option value="all">{t('allModes') || '全部'}</option>
+            <option value="single">{t('singlePlayer') || '单人'}</option>
+            <option value="multiplayer">{t('multiplayer') || '双人'}</option>
           </select>
           <span className="text-gray-400 text-sm">
             {filteredEntries.length} {t('totalRecords')}
@@ -175,6 +196,7 @@ export default function LeaderboardPage() {
                     <th className="px-2 py-3 text-left w-16">{t('rank')}</th>
                     <th className="px-2 py-3 text-right">{t('score')}</th>
                     <th className="px-2 py-3 text-center w-24">{t('map')}</th>
+                    <th className="px-2 py-3 text-center w-24">{t('mode') || '模式'}</th>
                     <th className="px-2 py-3 text-center w-48">{t('email')}</th>
                     <th className="px-2 py-3 text-right hidden lg:table-cell">{t('date')}</th>
                   </tr>
@@ -203,6 +225,15 @@ export default function LeaderboardPage() {
                       <td className="px-2 py-3 text-center text-sm">
                         <span className="px-2 py-1 bg-gray-700 rounded text-gray-300">
                           {entry.mapName || t('defaultMap')}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3 text-center text-sm">
+                        <span className={`px-2 py-1 rounded ${
+                          entry.gameMode === 'multiplayer'
+                            ? 'bg-yellow-700 text-yellow-200'
+                            : 'bg-green-700 text-green-200'
+                        }`}>
+                          {entry.gameMode === 'multiplayer' ? (t('multiplayer') || '双人') : (t('singlePlayer') || '单人')}
                         </span>
                       </td>
                       <td className="px-2 py-3 text-center text-gray-300 text-sm">

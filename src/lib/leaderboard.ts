@@ -42,6 +42,7 @@ export async function addScore(
     email?: string
     mapId?: string
     mapName?: string
+    gameMode?: 'single' | 'multiplayer'
   }
 ): Promise<boolean> {
   // Don't save if score is 0 or negative
@@ -50,7 +51,7 @@ export async function addScore(
     return false
   }
 
-  console.log('addScore - userId:', options.userId, 'email:', options.email)
+  console.log('addScore - userId:', options.userId, 'email:', options.email, 'gameMode:', options.gameMode)
 
   // Use the provided userId directly (trusted from login)
   const userIdToUse = options.userId || null
@@ -64,6 +65,7 @@ export async function addScore(
       levels_completed: levelsCompleted,
       map_id: options.mapId || null,
       map_name: options.mapName || '默认地图',
+      game_mode: options.gameMode || 'single',
     })
 
   if (error) {
