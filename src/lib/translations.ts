@@ -111,10 +111,7 @@ export const translations = {
     score: '分数',
     map: '地图',
     date: '日期',
-    clearLeaderboard: '清空排行榜',
-    confirmClearLeaderboard: '确定要清空排行榜吗？',
-    contactAdmin: '请联系管理员清空云端排行榜',
-
+    
     // Auth errors
     pleaseLoginFirst: '请先登录后才能创建和管理自定义地图',
     pleaseLoginToCreateMap: '请先登录后才能创建自定义地图',
@@ -232,10 +229,7 @@ export const translations = {
     score: 'Score',
     map: 'Map',
     date: 'Date',
-    clearLeaderboard: 'Clear Leaderboard',
-    confirmClearLeaderboard: 'Are you sure you want to clear the leaderboard?',
-    contactAdmin: 'Please contact admin to clear cloud leaderboard',
-
+    
     // Auth errors
     pleaseLoginFirst: 'Please login first to create and manage custom maps',
     pleaseLoginToCreateMap: 'Please login first to create custom maps',

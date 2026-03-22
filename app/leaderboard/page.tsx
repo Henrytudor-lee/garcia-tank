@@ -95,18 +95,6 @@ export default function LeaderboardPage() {
     }
   }
 
-  const clearLeaderboard = async () => {
-    if (!confirm(t('confirmClearLeaderboard'))) return
-
-    if (user) {
-      // Note: In production, you'd want a server-side function to clear
-      alert(t('contactAdmin'))
-    } else {
-      localStorage.removeItem('leaderboard')
-      setEntries([])
-    }
-  }
-
   const goBack = () => {
     router.push('/')
   }
@@ -229,15 +217,7 @@ export default function LeaderboardPage() {
               </table>
             </div>
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={clearLeaderboard}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded"
-              >
-                清空排行榜
-              </button>
-            </div>
-          </>
+                      </>
         )}
       </div>
     </main>
