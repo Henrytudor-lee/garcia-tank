@@ -145,8 +145,8 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white p-4">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-black text-white p-4 flex flex-col">
+      <div className="max-w-4xl mx-auto flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-6 border-b border-neon-cyan/30 pb-4">
           <div>
             <h1 className="text-3xl font-bold text-neon-yellow drop-shadow-[0_0_10px_#ffff00]">{t('leaderboardTitle')}</h1>
@@ -227,8 +227,8 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
-              <div className="max-h-[600px] overflow-y-auto">
+            <div className="bg-gray-800 rounded-lg overflow-hidden flex flex-col flex-1">
+              <div className="flex-1 overflow-y-auto min-h-0">
                 <table className="w-full">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-black/90 border-b border-neon-cyan/30">
