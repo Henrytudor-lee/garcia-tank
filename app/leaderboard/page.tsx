@@ -196,7 +196,7 @@ export default function LeaderboardPage() {
                     <th className="px-2 py-3 text-left w-16 text-neon-cyan">{t('rank')}</th>
                     <th className="px-2 py-3 text-right text-neon-cyan">{t('score')}</th>
                     <th className="px-2 py-3 text-center w-24 text-neon-cyan">{t('map')}</th>
-                    <th className="px-2 py-3 text-center w-24 text-neon-cyan">{t('mode') || '模式'}</th>
+                    <th className="px-2 py-3 text-center w-20 text-neon-cyan">{t('mode') || '模式'}</th>
                     <th className="px-2 py-3 text-center w-48 text-neon-cyan">{t('email')}</th>
                     <th className="px-2 py-3 text-right hidden lg:table-cell text-neon-cyan">{t('date')}</th>
                   </tr>
@@ -227,8 +227,8 @@ export default function LeaderboardPage() {
                           {entry.mapName || t('defaultMap')}
                         </span>
                       </td>
-                      <td className="px-2 py-3 text-center text-sm">
-                        <span className={`px-2 py-1 rounded ${
+                      <td className="px-2 py-3 text-center text-sm whitespace-nowrap">
+                        <span className={`inline-block px-2 py-1 rounded ${
                           entry.gameMode === 'multiplayer'
                             ? 'bg-neon-yellow/20 border border-neon-yellow/50 text-neon-yellow'
                             : 'bg-neon-green/20 border border-neon-green/50 text-neon-green'
