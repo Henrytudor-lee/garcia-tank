@@ -227,11 +227,12 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg overflow-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 220px)' }}>
-              <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <div className="bg-gray-800 rounded-lg overflow-hidden flex flex-col flex-1 min-h-0">
+              {/* 表格内容区域 - 可滚动 */}
+              <div className="flex-1 overflow-y-auto min-h-0">
                 <table className="w-full">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-black/90 border-b border-neon-cyan/30">
+                  <thead className="sticky top-0 z-10 bg-gray-800">
+                    <tr className="border-b border-neon-cyan/30">
                       <th className="px-2 py-3 text-left w-14 text-neon-cyan">{t('rank')}</th>
                       <th className="px-2 py-3 text-right text-neon-cyan min-w-[80px]">{t('score')}</th>
                       <th className="px-2 py-3 text-center text-neon-cyan min-w-[100px]">{t('map')}</th>
