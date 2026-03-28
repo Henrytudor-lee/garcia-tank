@@ -9,13 +9,14 @@ import { LanguageToggle } from '@/src/components/LanguageToggle'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { signUp } = useAuth()
+  const { signUp, signIn } = useAuth()
   const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,13 +41,30 @@ export default function RegisterPage() {
       setError(error)
       setLoading(false)
     } else {
-      alert(t('registrationSuccess'))
-      router.push('/login')
+      // Auto login after registration
+      await signIn(email, password)
+      setSuccess(true)
+      // Redirect to main menu after showing success message
+      setTimeout(() => {
+        router.push('/')
+      }, 1500)
     }
   }
 
   return (
     <main className="min-h-screen bg-black flex items-center justify-center p-4">
+      {/* Success Toast */}
+      {success && (
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
+          <div className="bg-neon-green/20 border-2 border-neon-green text-neon-green px-6 py-3 rounded-lg shadow-neon-green flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-bold">{t('registrationSuccess')}，正在跳转...</span>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
         <div className="bg-black/80 rounded-lg p-8 border-2 border-neon-cyan/30">
           <div className="flex justify-end mb-4">

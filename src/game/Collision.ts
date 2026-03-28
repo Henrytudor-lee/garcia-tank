@@ -68,8 +68,13 @@ export class Collision {
     const { x, y } = bullet.position
     const { width, height } = bullet.size
 
-    return x < 0 || x + width > GAME_CONFIG.CANVAS_WIDTH ||
-           y < 0 || y + height > GAME_CONFIG.CANVAS_HEIGHT
+    // Get dynamic map dimensions from MapSystem
+    const mapData = this.mapSystem.getMapData()
+    const mapWidth = mapData.width * mapData.tileSize
+    const mapHeight = mapData.height * mapData.tileSize
+
+    return x < 0 || x + width > mapWidth ||
+           y < 0 || y + height > mapHeight
   }
 
   // Check bullet vs map tiles

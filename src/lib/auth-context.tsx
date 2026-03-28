@@ -139,25 +139,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    // Use Supabase auth
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    // Check if email already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
 
-    if (error) {
-      return { error: error.message }
+    if (existingUser) {
+      return { error: '该邮箱已被注册' }
     }
 
-    if (!data.user) {
-      return { error: '注册失败' }
-    }
+    // Generate a UUID for the user
+    const userId = crypto.randomUUID()
 
-    // Create user profile in users table
-    const { error: profileError } = await supabase
+    // Insert directly into users table
+    const { error: insertError } = await supabase
       .from('users')
       .insert({
-        id: data.user.id,
+        id: userId,
         email,
         username,
         password,
@@ -165,10 +165,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: 'active',
       })
 
-    if (profileError) {
-      console.error('Error creating user profile:', profileError)
-      return { error: profileError.message }
+    if (insertError) {
+      console.error('Error creating user:', insertError)
+      return { error: insertError.message }
     }
+
+    // Set user directly in state (like legacy login)
+    setUser({
+      id: userId,
+      email,
+      username,
+    })
+    // Store in localStorage for persistence
+    localStorage.setItem('tank_user', JSON.stringify({
+      id: userId,
+      email,
+      username,
+      isLegacy: true
+    }))
 
     return { error: null }
   }

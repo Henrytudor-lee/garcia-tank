@@ -90,8 +90,13 @@ export class EnemyAI {
         break
     }
 
-    newX = Math.max(0, Math.min(GAME_CONFIG.CANVAS_WIDTH - tank.size.width, newX))
-    newY = Math.max(0, Math.min(GAME_CONFIG.CANVAS_HEIGHT - tank.size.height, newY))
+    // Get dynamic map dimensions from MapSystem
+    const mapData = this.mapSystem.getMapData()
+    const mapWidth = mapData.width * mapData.tileSize
+    const mapHeight = mapData.height * mapData.tileSize
+
+    newX = Math.max(0, Math.min(mapWidth - tank.size.width, newX))
+    newY = Math.max(0, Math.min(mapHeight - tank.size.height, newY))
 
     return !this.mapSystem.isColliding(newX, newY, tank.size.width)
   }
@@ -213,9 +218,14 @@ export class EnemyAI {
         break
     }
 
-    // Keep within canvas bounds
-    newX = Math.max(0, Math.min(GAME_CONFIG.CANVAS_WIDTH - tank.size.width, newX))
-    newY = Math.max(0, Math.min(GAME_CONFIG.CANVAS_HEIGHT - tank.size.height, newY))
+    // Get dynamic map dimensions from MapSystem
+    const mapData = this.mapSystem.getMapData()
+    const mapWidth = mapData.width * mapData.tileSize
+    const mapHeight = mapData.height * mapData.tileSize
+
+    // Keep within map bounds
+    newX = Math.max(0, Math.min(mapWidth - tank.size.width, newX))
+    newY = Math.max(0, Math.min(mapHeight - tank.size.height, newY))
 
     // Check map collision
     if (!this.mapSystem.isColliding(newX, newY, tank.size.width)) {

@@ -141,10 +141,12 @@ export class TankSystem {
       }
     } else {
       // Default spawn positions for enemies (below top border, at tile y=1)
+      // Avoid x=6 which is where the base is located
       const spawnPositions: Position[] = [
-        { x: 1 * tileSize, y: 1 * tileSize },
-        { x: 6 * tileSize, y: 1 * tileSize },
-        { x: 11 * tileSize, y: 1 * tileSize },
+        { x: 0 * tileSize, y: 1 * tileSize },
+        { x: 4 * tileSize, y: 1 * tileSize },
+        { x: 8 * tileSize, y: 1 * tileSize },
+        { x: 12 * tileSize, y: 1 * tileSize },
       ]
       const spawnIdx = this.tanks.size % spawnPositions.length
       spawn = spawnPositions[spawnIdx]

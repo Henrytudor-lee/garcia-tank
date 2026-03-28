@@ -19,8 +19,8 @@ export class MapSystem {
       height: MAP_HEIGHT,
       tileSize: TILE_SIZE,
     }
-    // Base at tile (6, 11) - just above the bottom border
-    this.basePosition = { x: 6, y: 11 }
+    // Base at tile (6, 0) - top center
+    this.basePosition = { x: 6, y: 12 }
     this.generateDefaultMap()
   }
 
@@ -63,12 +63,7 @@ export class MapSystem {
     for (let y = 0; y < MAP_HEIGHT; y++) {
       tiles[y] = []
       for (let x = 0; x < MAP_WIDTH; x++) {
-        // Border walls (left and right only)
-        if (x === 0 || x === MAP_WIDTH - 1) {
-          tiles[y][x] = { type: TileType.STEEL, x, y }
-        } else {
-          tiles[y][x] = { type: TileType.EMPTY, x, y }
-        }
+        tiles[y][x] = { type: TileType.EMPTY, x, y }
       }
     }
 
@@ -76,9 +71,9 @@ export class MapSystem {
     const baseX = this.basePosition.x
     const baseY = this.basePosition.y
 
-    // Add bricks around base
+    // Add bricks around base (left, top, right only - no bottom)
     for (let dx = -1; dx <= 1; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
+      for (let dy = -1; dy <= 0; dy++) {  // Only top side (dy=-1) and left/right (dy=0)
         if (dx === 0 && dy === 0) continue
         const tx = baseX + dx
         const ty = baseY + dy
@@ -109,7 +104,7 @@ export class MapSystem {
     for (const pos of structures) {
       tiles[pos.y][pos.x] = { type: TileType.BRICK, x: pos.x, y: pos.y }
     }
-
+ 
     this.mapData.tiles = tiles
   }
 
@@ -445,7 +440,7 @@ export class MapSystem {
       this.loadCustomMap(this.customMap)
     } else {
       this.generateDefaultMap()
-      this.basePosition = { x: 6, y: 11 }
+      this.basePosition = { x: 6, y: 12 }
     }
     this.baseHp = 1
   }

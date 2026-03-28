@@ -1,12 +1,11 @@
 import { supabase, DbCustomMap, convertDbCustomMap } from './supabase'
 import type { CustomMap } from '../game/types'
 
-// Get all custom maps for current user
+// Get all custom maps
 export async function getUserMaps(userId: string): Promise<CustomMap[]> {
   const { data, error } = await supabase
     .from('custom_maps')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (error) {
