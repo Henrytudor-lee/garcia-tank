@@ -33,7 +33,7 @@ export async function getLeaderboardByMap(mapId: string, limit: number = 10): Pr
   return data || []
 }
 
-// Add score to leaderboard
+// Add score to leaderboard - 使用 API 路由（更安全）
 export async function addScore(
   score: number,
   levelsCompleted: number,
@@ -53,7 +53,57 @@ export async function addScore(
 
   console.log('addScore - userId:', options.userId, 'email:', options.email, 'gameMode:', options.gameMode)
 
-  // Use the provided userId directly (trusted from login)
+  // 优先使用 API 路由（更安全）
+  try {
+    const response = await fetch('/api/score', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        score,
+        levelsCompleted,
+        userId: options.userId,
+        email: options.email,
+        mapId: options.mapId,
+        mapName: options.mapName,
+        gameMode: options.gameMode,
+      }),
+    })
+
+    if (response.ok) {
+      console.log('Score saved via API successfully')
+      return true
+    }
+
+    const errorData = await response.json()
+    console.error('API error:', errorData.error)
+
+    // 如果是配置错误（service key 未配置），降级到直接 Supabase 调用
+    if (response.status === 500 && errorData.error === 'Server configuration error') {
+      console.log('Falling back to direct Supabase insert')
+      return await addScoreDirect(score, levelsCompleted, options)
+    }
+
+    return false
+  } catch (error) {
+    console.error('API call failed, falling back to direct Supabase:', error)
+    return await addScoreDirect(score, levelsCompleted, options)
+  }
+}
+
+// 直接写入数据库（降级方案，风险更高）
+async function addScoreDirect(
+  score: number,
+  levelsCompleted: number,
+  options: {
+    userId?: string
+    email?: string
+    mapId?: string
+    mapName?: string
+    gameMode?: 'single' | 'multiplayer'
+  }
+): Promise<boolean> {
   const userIdToUse = options.userId || null
 
   const { error } = await supabase
@@ -73,7 +123,7 @@ export async function addScore(
     return false
   }
 
-  console.log('Score saved to database successfully')
+  console.log('Score saved to database successfully (direct)')
   return true
 }
 
