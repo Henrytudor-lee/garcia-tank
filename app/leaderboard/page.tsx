@@ -32,6 +32,8 @@ export default function LeaderboardPage() {
   const [selectedMap, setSelectedMap] = useState<string>('all')
   const [selectedMode, setSelectedMode] = useState<string>('all')
   const [loading, setLoading] = useState(true)
+  const [pageSize, setPageSize] = useState<number>(50)
+  const [currentPage, setCurrentPage] = useState<number>(1)
 
   useEffect(() => {
     if (!authLoading) {
@@ -41,7 +43,11 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     filterEntries()
-  }, [entries, selectedMap, selectedMode])
+  }, [entries, selectedMap, selectedMode, pageSize])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedMap, selectedMode, pageSize])
 
   const loadData = async () => {
     setLoading(true)
@@ -105,6 +111,15 @@ export default function LeaderboardPage() {
       setFilteredEntries(filtered.filter(e => e.mapId === selectedMap))
     }
   }
+
+  // Get paginated entries
+  const getPaginatedEntries = () => {
+    const start = (currentPage - 1) * pageSize
+    const end = start + pageSize
+    return filteredEntries.slice(start, end)
+  }
+
+  const totalPages = Math.ceil(filteredEntries.length / pageSize)
 
   const goBack = () => {
     router.push('/')
@@ -189,64 +204,153 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-black/80 border-b border-neon-cyan/30">
-                    <th className="px-2 py-3 text-left w-14 text-neon-cyan">{t('rank')}</th>
-                    <th className="px-2 py-3 text-right text-neon-cyan min-w-[80px]">{t('score')}</th>
-                    <th className="px-2 py-3 text-center text-neon-cyan min-w-[100px]">{t('map')}</th>
-                    <th className="px-2 py-3 text-center w-20 text-neon-cyan">{t('mode') || '模式'}</th>
-                    <th className="px-2 py-3 text-center w-40 text-neon-cyan">{t('email')}</th>
-                    <th className="px-2 py-3 text-right hidden lg:table-cell w-32 text-neon-cyan">{t('date')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEntries.map((entry, index) => (
-                    <tr
-                      key={entry.id || index}
-                      className={`border-t border-gray-700 ${
-                        index === 0 ? 'bg-yellow-900/30' :
-                        index === 1 ? 'bg-gray-600/50' :
-                        index === 2 ? 'bg-orange-900/30' : ''
-                      }`}
-                    >
-                      <td className="px-2 py-3">
-                        <span className="flex items-center gap-1">
-                          {index === 0 && '🥇'}
-                          {index === 1 && '🥈'}
-                          {index === 2 && '🥉'}
-                          {index > 2 && `#${index + 1}`}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-right font-bold text-yellow-400">
-                        {entry.score.toLocaleString()}
-                      </td>
-                      <td className="px-2 py-3 text-center text-sm min-w-[100px]">
-                        <span className="inline-block max-w-[150px] px-2 py-1 bg-black/60 border border-neon-cyan/30 rounded text-neon-cyan/80 truncate" title={entry.mapName || t('defaultMap')}>
-                          {entry.mapName || t('defaultMap')}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-center text-sm whitespace-nowrap">
-                        <span className={`inline-block px-2 py-1 rounded ${
-                          entry.gameMode === 'multiplayer'
-                            ? 'bg-neon-yellow/20 border border-neon-yellow/50 text-neon-yellow'
-                            : 'bg-neon-green/20 border border-neon-green/50 text-neon-green'
-                        }`}>
-                          {entry.gameMode === 'multiplayer' ? (t('multiplayer') || '双人') : (t('singlePlayer') || '单人')}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-center text-gray-300 text-sm">
-                        {entry.email || '游客'}
-                      </td>
-                      <td className="px-2 py-3 text-right text-gray-400 text-sm hidden lg:table-cell">
-                        {formatDate(entry.date)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Page size selector */}
+            <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-neon-cyan/80">{t('pageSize') || '每页显示'}:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  className="px-3 py-1.5 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
+                >
+                  <option value={10}>10 {t('records') || '条'}</option>
+                  <option value={20}>20 {t('records') || '条'}</option>
+                  <option value={50}>50 {t('records') || '条'}</option>
+                  <option value={100}>100 {t('records') || '条'}</option>
+                </select>
+              </div>
+              <div className="text-neon-cyan/70 text-sm">
+                {t('page')} {currentPage} / {totalPages}
+              </div>
             </div>
+
+            <div className="bg-gray-800 rounded-lg overflow-hidden">
+              <div className="max-h-[600px] overflow-y-auto">
+                <table className="w-full">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-black/90 border-b border-neon-cyan/30">
+                      <th className="px-2 py-3 text-left w-14 text-neon-cyan">{t('rank')}</th>
+                      <th className="px-2 py-3 text-right text-neon-cyan min-w-[80px]">{t('score')}</th>
+                      <th className="px-2 py-3 text-center text-neon-cyan min-w-[100px]">{t('map')}</th>
+                      <th className="px-2 py-3 text-center w-20 text-neon-cyan">{t('mode') || '模式'}</th>
+                      <th className="px-2 py-3 text-center w-40 text-neon-cyan">{t('email')}</th>
+                      <th className="px-2 py-3 text-right hidden lg:table-cell w-32 text-neon-cyan">{t('date')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getPaginatedEntries().map((entry, index) => {
+                      const rank = (currentPage - 1) * pageSize + index + 1
+                      return (
+                        <tr
+                          key={entry.id || rank}
+                          className={`border-t border-gray-700 ${
+                            rank === 1 ? 'bg-yellow-900/30' :
+                            rank === 2 ? 'bg-gray-600/50' :
+                            rank === 3 ? 'bg-orange-900/30' : ''
+                          }`}
+                        >
+                          <td className="px-2 py-3">
+                            <span className="flex items-center gap-1">
+                              {rank === 1 && '🥇'}
+                              {rank === 2 && '🥈'}
+                              {rank === 3 && '🥉'}
+                              {rank > 3 && `#${rank}`}
+                            </span>
+                          </td>
+                          <td className="px-2 py-3 text-right font-bold text-yellow-400">
+                            {entry.score.toLocaleString()}
+                          </td>
+                          <td className="px-2 py-3 text-center text-sm min-w-[100px]">
+                            <span className="inline-block max-w-[150px] px-2 py-1 bg-black/60 border border-neon-cyan/30 rounded text-neon-cyan/80 truncate" title={entry.mapName || t('defaultMap')}>
+                              {entry.mapName || t('defaultMap')}
+                            </span>
+                          </td>
+                          <td className="px-2 py-3 text-center text-sm whitespace-nowrap">
+                            <span className={`inline-block px-2 py-1 rounded ${
+                              entry.gameMode === 'multiplayer'
+                                ? 'bg-neon-yellow/20 border border-neon-yellow/50 text-neon-yellow'
+                                : 'bg-neon-green/20 border border-neon-green/50 text-neon-green'
+                            }`}>
+                              {entry.gameMode === 'multiplayer' ? (t('multiplayer') || '双人') : (t('singlePlayer') || '单人')}
+                            </span>
+                          </td>
+                          <td className="px-2 py-3 text-center text-gray-300 text-sm">
+                            {entry.email || '游客'}
+                          </td>
+                          <td className="px-2 py-3 text-right text-gray-400 text-sm hidden lg:table-cell">
+                            {formatDate(entry.date)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  ««
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  «
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1.5 rounded border transition-all ${
+                          currentPage === pageNum
+                            ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan'
+                            : 'bg-black/60 border-neon-cyan/30 text-neon-cyan/70 hover:bg-neon-cyan/20'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  »
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 bg-neon-cyan/20 hover:bg-neon-cyan/40 border border-neon-cyan/50 text-neon-cyan rounded disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  »»
+                </button>
+              </div>
+            )}
 
                       </>
         )}

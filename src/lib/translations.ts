@@ -109,7 +109,7 @@ export const translations = {
     filterMode: '筛选模式',
     allModes: '全部',
     allMaps: '全部地图',
-    totalRecords: '共 条记录',
+    totalRecords: '条记录',
     noRecords: '暂无记录',
     startGameToRecord: '开始游戏来创造你的最高分吧！',
     rank: '排名',
@@ -117,6 +117,9 @@ export const translations = {
     map: '地图',
     mode: '模式',
     date: '日期',
+    pageSize: '每页显示',
+    records: '条',
+    page: '第',
     
     // Auth errors
     pleaseLoginFirst: '请先登录后才能创建和管理自定义地图',
@@ -241,6 +244,9 @@ export const translations = {
     map: 'Map',
     mode: 'Mode',
     date: 'Date',
+    pageSize: 'Per page',
+    records: '',
+    page: 'Page',
     
     // Auth errors
     pleaseLoginFirst: 'Please login first to create and manage custom maps',
