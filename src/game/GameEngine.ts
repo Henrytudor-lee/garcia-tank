@@ -389,6 +389,7 @@ export class GameEngine {
       // Decrease the corresponding player's lives
       if (isPlayer1) {
         this.player1Lives = Math.max(0, this.player1Lives - 1)
+        this.scoreSystem.setLives(this.player1Lives) // Sync with scoreSystem for UI
         if (this.player1Lives <= 0) {
           this.player1Dead = true // Permanently dead
         }
