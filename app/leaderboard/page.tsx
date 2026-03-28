@@ -227,8 +227,8 @@ export default function LeaderboardPage() {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 260px)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <div className="bg-gray-800 rounded-lg overflow-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 220px)' }}>
+              <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(100vh - 300px)' }}>
                 <table className="w-full">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-black/90 border-b border-neon-cyan/30">
