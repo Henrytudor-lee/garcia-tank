@@ -18,7 +18,7 @@ interface LeaderboardEntry {
   email?: string;
   userId?: string;
   username?: string;
-  gameMode?: "single" | "multiplayer";
+  gameMode?: "single" | "multiplayer" | "endless";
 }
 
 export default function LeaderboardPage() {
@@ -30,8 +30,8 @@ export default function LeaderboardPage() {
     [],
   );
   const [customMaps, setCustomMaps] = useState<CustomMap[]>([]);
-  const [selectedMap, setSelectedMap] = useState<string>("all");
-  const [selectedMode, setSelectedMode] = useState<string>("all");
+  const [selectedMap, setSelectedMap] = useState<string>("default");
+  const [selectedMode, setSelectedMode] = useState<string>("single");
   const [loading, setLoading] = useState(true);
   const [pageSize, setPageSize] = useState<number>(50);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -99,14 +99,10 @@ export default function LeaderboardPage() {
     let filtered = entries;
 
     // Filter by mode
-    if (selectedMode !== "all") {
-      filtered = filtered.filter((e) => e.gameMode === selectedMode);
-    }
+    filtered = filtered.filter((e) => e.gameMode === selectedMode);
 
     // Filter by map
-    if (selectedMap === "all") {
-      setFilteredEntries(filtered);
-    } else if (selectedMap === "default") {
+    if (selectedMap === "default") {
       setFilteredEntries(
         filtered.filter((e) => !e.mapId || e.mapName === t("defaultMap")),
       );
@@ -181,7 +177,6 @@ export default function LeaderboardPage() {
             onChange={(e) => setSelectedMap(e.target.value)}
             className="px-4 py-2 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
           >
-            <option value="all">{t("allMaps")}</option>
             <option value="default">{t("defaultMap")}</option>
             {customMaps.map((map) => (
               <option key={map.id} value={map.id}>
@@ -197,8 +192,8 @@ export default function LeaderboardPage() {
             onChange={(e) => setSelectedMode(e.target.value)}
             className="px-4 py-2 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
           >
-            <option value="all">{t("allModes") || "全部"}</option>
             <option value="single">{t("singlePlayer") || "单人"}</option>
+            <option value="endless">{t("endlessMode") || "无尽模式"}</option>
             <option value="multiplayer">{t("multiplayer") || "双人"}</option>
           </select>
           <span className="text-neon-cyan/70 text-sm">
@@ -304,11 +299,15 @@ export default function LeaderboardPage() {
                               className={`inline-block px-2 py-1 rounded ${
                                 entry.gameMode === "multiplayer"
                                   ? "bg-neon-yellow/20 border border-neon-yellow/50 text-neon-yellow"
+                                  : entry.gameMode === "endless"
+                                  ? "bg-neon-orange/20 border border-neon-orange/50 text-neon-orange"
                                   : "bg-neon-green/20 border border-neon-green/50 text-neon-green"
                               }`}
                             >
                               {entry.gameMode === "multiplayer"
                                 ? t("multiplayer") || "双人"
+                                : entry.gameMode === "endless"
+                                ? t("endlessMode") || "无尽"
                                 : t("singlePlayer") || "单人"}
                             </span>
                           </td>

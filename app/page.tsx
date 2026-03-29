@@ -312,58 +312,80 @@ export default function Home() {
               {t('multiplayerControls') || '双人模式: 玩家1(WASD+空格) 玩家2(方向键+0)'}
             </p>
 
-            <div className="flex flex-col gap-5">
-              {/* Map Selection */}
-              <div className="flex flex-col gap-2">
-                <p className="text-neon-cyan/80 text-center text-sm">{t('selectMap')}:</p>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value === 'default') {
-                      setSelectedMap(null)
-                    } else {
-                      const map = customMaps.find(m => m.id === e.target.value)
-                      setSelectedMap(map || null)
-                    }
-                  }}
-                  className="px-4 py-2 bg-black/80 text-white rounded border-2 border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors"
-                  value={selectedMap?.id || 'default'}
+            {/* Left-Right Layout */}
+            <div className="flex gap-6 items-start">
+              {/* Left Column - Map, Single, Multiplayer */}
+              <div className="flex flex-col gap-3 w-44">
+                {/* Map Selection */}
+                <div className="flex flex-col gap-1">
+                  <p className="text-neon-cyan/80 text-center text-xs">{t('selectMap')}:</p>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value === 'default') {
+                        setSelectedMap(null)
+                      } else {
+                        const map = customMaps.find(m => m.id === e.target.value)
+                        setSelectedMap(map || null)
+                      }
+                    }}
+                    className="px-2 py-1.5 bg-black/80 text-white rounded border border-neon-cyan/50 focus:border-neon-cyan focus:outline-none transition-colors text-sm w-full"
+                    value={selectedMap?.id || 'default'}
+                  >
+                    <option value="default">{t('defaultMap')}</option>
+                    {customMaps.map(map => (
+                      <option key={map.id} value={map.id}>{map.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Single Player Mode */}
+                <button
+                  onClick={() => startGame(selectedMap || undefined, GameMode.SINGLE)}
+                  className="px-3 py-2 bg-neon-green/20 hover:bg-neon-green/40 border border-neon-green text-neon-green font-bold rounded text-sm transition-all duration-300 hover:shadow-neon-green whitespace-nowrap"
                 >
-                  <option value="default">{t('defaultMap')}</option>
-                  {customMaps.map(map => (
-                    <option key={map.id} value={map.id}>{map.name}</option>
-                  ))}
-                </select>
+                  {t('singlePlayer')}
+                </button>
+
+                {/* Multiplayer Mode */}
+                <button
+                  onClick={() => startGame(selectedMap || undefined, GameMode.MULTIPLAYER)}
+                  className="px-3 py-2 bg-neon-yellow/20 hover:bg-neon-yellow/40 border border-neon-yellow text-neon-yellow font-bold rounded text-sm transition-all duration-300 hover:shadow-neon-yellow whitespace-nowrap"
+                >
+                  {t('multiplayer')}
+                </button>
               </div>
 
-              {/* Single Player Mode */}
-              <button
-                onClick={() => startGame(selectedMap || undefined, GameMode.SINGLE)}
-                className="px-8 py-3 bg-neon-green/20 hover:bg-neon-green/40 border-2 border-neon-green text-neon-green font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-green"
-              >
-                {t('singlePlayer') || '单人模式'}
-              </button>
+              {/* Right Column - Endless on top, Custom Maps and Leaderboard on bottom */}
+              <div className="flex flex-col gap-3 w-52">
+                {/* Endless Mode - Top */}
+                <button
+                  onClick={() => startGame(selectedMap || undefined, GameMode.ENDLESS)}
+                  className="px-3 py-2 bg-neon-orange/20 hover:bg-neon-orange/40 border border-neon-orange text-neon-orange font-bold rounded text-sm transition-all duration-300 hover:shadow-neon-orange whitespace-nowrap"
+                >
+                  {t('endlessMode')}
+                </button>
 
-              {/* Multiplayer Mode */}
-              <button
-                onClick={() => startGame(selectedMap || undefined, GameMode.MULTIPLAYER)}
-                className="px-8 py-3 bg-neon-yellow/20 hover:bg-neon-yellow/40 border-2 border-neon-yellow text-neon-yellow font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-yellow"
-              >
-                {t('multiplayer') || '双人模式'}
-              </button>
+                {/* Bottom row - Custom Maps and Leaderboard with icons */}
+                <div className="flex gap-2">
+                  {/* Custom Maps - Bottom Left */}
+                  <button
+                    onClick={goToCustomMaps}
+                    className="flex items-center justify-center gap-1 px-2 py-1.5 bg-neon-purple/20 hover:bg-neon-purple/40 border border-neon-purple text-neon-purple font-bold rounded text-xs transition-all duration-300 hover:shadow-neon-purple whitespace-nowrap"
+                  >
+                    <span>🗺️</span>
+                    <span>{t('customMaps')}</span>
+                  </button>
 
-              <button
-                onClick={goToCustomMaps}
-                className="px-8 py-3 bg-neon-purple/20 hover:bg-neon-purple/40 border-2 border-neon-purple text-neon-purple font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-purple"
-              >
-                {t('customMaps')}
-              </button>
-
-              <button
-                onClick={goToLeaderboard}
-                className="px-8 py-3 bg-neon-magenta/20 hover:bg-neon-magenta/40 border-2 border-neon-magenta text-neon-magenta font-bold rounded text-xl transition-all duration-300 hover:shadow-neon-magenta"
-              >
-                {t('leaderboard')}
-              </button>
+                  {/* Leaderboard - Bottom Right */}
+                  <button
+                    onClick={goToLeaderboard}
+                    className="flex items-center justify-center gap-1 px-2 py-1.5 bg-neon-magenta/20 hover:bg-neon-magenta/40 border border-neon-magenta text-neon-magenta font-bold rounded text-xs transition-all duration-300 hover:shadow-neon-magenta whitespace-nowrap"
+                  >
+                    <span>🏆</span>
+                    <span>{t('leaderboard')}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

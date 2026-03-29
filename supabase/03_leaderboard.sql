@@ -9,7 +9,7 @@ CREATE TABLE public.leaderboard (
   levels_completed INTEGER NOT NULL DEFAULT 1,
   map_id UUID REFERENCES public.custom_maps(id) ON DELETE SET NULL, -- 使用的地图ID
   map_name TEXT, -- 地图名称（冗余存储，方便查询）
-  game_mode TEXT NOT NULL DEFAULT 'single', -- 游戏模式：single(单人) 或 multiplayer(双人)
+  game_mode TEXT NOT NULL DEFAULT 'single', -- 游戏模式：single(单人)、multiplayer(双人) 或 endless(无尽)
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

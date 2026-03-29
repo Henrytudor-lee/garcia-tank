@@ -7,7 +7,9 @@ import { Collision } from './Collision'
 import { EnemyAI } from './EnemyAI'
 import { ScoreSystem } from './ScoreSystem'
 import { LevelSystem } from './LevelSystem'
-import { GameState, GameMode, TankType, Direction, CustomMap } from './types'
+import { PowerUpSystem } from './PowerUpSystem'
+import { EffectSystem } from './EffectSystem'
+import { GameState, GameMode, TankType, Direction, CustomMap, PowerUpType, Position } from './types'
 import { GAME_CONFIG } from '@/src/config/gameConfig'
 
 type GameEventCallback = (...args: any[]) => void
@@ -24,6 +26,8 @@ export class GameEngine {
   private enemyAI: EnemyAI
   private scoreSystem: ScoreSystem
   private levelSystem: LevelSystem
+  private powerUpSystem: PowerUpSystem
+  private effectSystem: EffectSystem
 
   private gameState: GameState = GameState.MENU
   private gameMode: GameMode = GameMode.SINGLE
@@ -51,6 +55,9 @@ export class GameEngine {
     this.enemyAI = new EnemyAI(this.mapSystem)
     this.scoreSystem = new ScoreSystem()
     this.levelSystem = new LevelSystem()
+    this.powerUpSystem = new PowerUpSystem(canvas)
+    this.powerUpSystem.setMapSystem(this.mapSystem)
+    this.effectSystem = new EffectSystem(canvas)
 
     // Register update and render callbacks
     this.gameLoop.onUpdate(this.update.bind(this))
@@ -106,9 +113,18 @@ export class GameEngine {
     this.enemyAI.reset()
     this.scoreSystem.reset()
     this.levelSystem.reset()
+    this.powerUpSystem.reset()
+    this.effectSystem.reset()
+
+    // Reset all power-up effects
+    this.shieldActive = false
+    this.shieldEndTime = 0
+    this.slowEffectEndTime = 0
+    this.doubleScoreEndTime = 0
+    this.lastLifeGainScore = 0
 
     // Initialize player lives and death status
-    this.player1Lives = GAME_CONFIG.PLAYER_LIVES
+    this.player1Lives = this.gameMode === GameMode.ENDLESS ? 1 : GAME_CONFIG.PLAYER_LIVES
     this.player2Lives = GAME_CONFIG.PLAYER_LIVES
     this.player1Dead = false
     this.player2Dead = false
@@ -121,6 +137,12 @@ export class GameEngine {
     if (this.gameMode === GameMode.MULTIPLAYER) {
       const player2 = this.tankSystem.createPlayer2()
       this.player2Id = player2.id
+    }
+
+    // Enable endless mode if applicable
+    if (this.gameMode === GameMode.ENDLESS) {
+      this.levelSystem.enableEndlessMode()
+      this.mapSystem.setShowBase(false)
     }
 
     // Update UI
@@ -166,6 +188,15 @@ export class GameEngine {
     this.enemyAI.reset()
     this.scoreSystem.reset()
     this.levelSystem.reset()
+    this.powerUpSystem.reset()
+    this.effectSystem.reset()
+
+    // Reset all power-up effects
+    this.shieldActive = false
+    this.shieldEndTime = 0
+    this.slowEffectEndTime = 0
+    this.doubleScoreEndTime = 0
+    this.lastLifeGainScore = 0
 
     // Load custom map
     this.mapSystem.loadCustomMap(customMap)
@@ -224,11 +255,22 @@ export class GameEngine {
     // Update bullets
     this.bulletSystem.update()
 
+    // Update power-ups
+    this.powerUpSystem.update()
+
+    // Update effects
+    this.effectSystem.update()
+
     // Check collisions
     this.checkCollisions()
 
     // Spawn enemies
     this.spawnEnemies()
+
+    // In endless mode: try spawn power-ups and check life gain
+    if (this.gameMode === GameMode.ENDLESS) {
+      this.handleEndlessModePowerUps()
+    }
 
     // Check level completion
     this.checkLevelCompletion()
@@ -258,8 +300,17 @@ export class GameEngine {
           const result = this.tankSystem.fire(player1.id)
           if (result.success && result.bullet) {
             this.bulletSystem.addBullet(result.bullet)
+            // Add extra bullets for triple bullet
+            if (result.extraBullets) {
+              for (const extra of result.extraBullets) {
+                this.bulletSystem.addBullet(extra)
+              }
+            }
           }
         }
+
+        // Update player speed based on power-up effects
+        this.updatePlayerSpeed(player1)
       }
     }
 
@@ -280,8 +331,35 @@ export class GameEngine {
           const result = this.tankSystem.fire(player2.id)
           if (result.success && result.bullet) {
             this.bulletSystem.addBullet(result.bullet)
+            if (result.extraBullets) {
+              for (const extra of result.extraBullets) {
+                this.bulletSystem.addBullet(extra)
+              }
+            }
           }
         }
+
+        // Update player 2 speed based on power-up effects
+        this.updatePlayerSpeed(player2)
+      }
+    }
+  }
+
+  // Update player speed based on power-up effects
+  private updatePlayerSpeed(tank: any) {
+    const now = Date.now()
+
+    // Check speed boost effect
+    if (tank.speedBoostEndTime) {
+      if (tank.speedBoostEndTime > now) {
+        // Speed boost is active
+        if (tank.speed !== GAME_CONFIG.PLAYER_SPEED * 2) {
+          tank.speed = GAME_CONFIG.PLAYER_SPEED * 2
+        }
+      } else {
+        // Speed boost expired, reset to normal
+        tank.speedBoostEndTime = undefined
+        tank.speed = GAME_CONFIG.PLAYER_SPEED
       }
     }
   }
@@ -350,10 +428,12 @@ export class GameEngine {
             break
 
           case 'base':
-            // Bullet hits base - game over
+            // Bullet hits base - game over (except in endless mode)
             this.bulletSystem.removeBullet(bulletId)
             bulletDestroyed = true
-            this.handleGameOver()
+            if (this.gameMode !== GameMode.ENDLESS) {
+              this.handleGameOver()
+            }
             break
 
           case 'tank':
@@ -361,6 +441,14 @@ export class GameEngine {
             if (result.targetId) {
               const targetTank = this.tankSystem.getTank(result.targetId)
               if (targetTank) {
+                // Check for shield protection
+                if (targetTank.isPlayer && this.hasShield()) {
+                  // Shield blocks damage, just remove bullet
+                  this.bulletSystem.removeBullet(bulletId)
+                  bulletDestroyed = true
+                  break
+                }
+
                 const destroyed = this.tankSystem.damageTank(result.targetId, bullet.damage)
                 this.bulletSystem.removeBullet(bulletId)
                 bulletDestroyed = true
@@ -385,6 +473,15 @@ export class GameEngine {
       // Determine which player died
       const isPlayer1 = tankId === this.playerId
       const isPlayer2 = tankId === this.player2Id
+
+      // In endless mode, if no lives remaining, game over; otherwise respawn
+      if (this.gameMode === GameMode.ENDLESS) {
+        if (this.player1Lives <= 0) {
+          this.handleGameOver()
+          return
+        }
+        // Player has lives, will respawn below
+      }
 
       // Decrease the corresponding player's lives
       if (isPlayer1) {
@@ -412,6 +509,11 @@ export class GameEngine {
           const player2 = this.tankSystem.createPlayer2()
           this.player2Id = player2.id
         }
+      } else {
+        // Can't respawn - game over (including endless mode when lives = 0)
+        if (this.gameMode === GameMode.ENDLESS || this.gameMode === GameMode.SINGLE) {
+          this.handleGameOver()
+        }
       }
 
       // Update UI with new lives
@@ -421,14 +523,14 @@ export class GameEngine {
         this.emit('livesUpdate', this.player1Lives)
       }
 
-      // Check game over condition
+      // Check game over condition (skip for endless mode - handled after respawn logic)
       if (this.gameMode === GameMode.MULTIPLAYER) {
         // Game over only if both players are dead
         const players = this.tankSystem.getPlayers()
         if (players.length === 0) {
           this.handleGameOver()
         }
-      } else {
+      } else if (this.gameMode !== GameMode.ENDLESS) {
         // Single player - game over when lives run out
         if (this.player1Lives <= 0) {
           this.handleGameOver()
@@ -437,8 +539,29 @@ export class GameEngine {
     } else {
       // Enemy destroyed - add score
       const score = EnemyAI.getScoreForType(tank.type)
-      this.scoreSystem.addScore(score)
+      // Apply double score multiplier if active
+      const scoreMultiplier = Date.now() < this.doubleScoreEndTime ? 2 : 1
+      this.scoreSystem.addScore(score * scoreMultiplier)
       this.levelSystem.recordEnemyDestroyed()
+
+      // Update endless mode score for difficulty scaling
+      if (this.gameMode === GameMode.ENDLESS) {
+        this.levelSystem.updateScore(this.scoreSystem.getScore())
+
+        // Try to drop power-up at enemy death position
+        this.powerUpSystem.tryDropPowerUp(
+          tank.position.x,
+          tank.position.y,
+          tank.type
+        )
+
+        // Trigger explosion effect at enemy position
+        this.effectSystem.triggerExplosion(
+          tank.position.x + tank.size.width / 2,
+          tank.position.y + tank.size.height / 2,
+          tank.size.width
+        )
+      }
 
       // Unregister from AI
       this.enemyAI.unregisterEnemy(tankId)
@@ -450,7 +573,17 @@ export class GameEngine {
     if (!this.levelSystem.shouldSpawnEnemy()) return
 
     const enemyType = this.levelSystem.getRandomEnemyType()
-    const enemy = this.tankSystem.createEnemy(enemyType)
+
+    // Get player position for random spawn (not too close to player)
+    let playerPos: Position | undefined = undefined
+    if (this.playerId) {
+      const player = this.tankSystem.getTank(this.playerId)
+      if (player) {
+        playerPos = player.position
+      }
+    }
+
+    const enemy = this.tankSystem.createEnemy(enemyType, playerPos)
     this.enemyAI.registerEnemy(enemy.id)
     this.levelSystem.recordSpawn()
   }
@@ -463,6 +596,12 @@ export class GameEngine {
         this.gameState = GameState.VICTORY
         this.emit('stateChange', this.gameState)
         this.gameLoop.stop()
+      } else if (this.gameMode === GameMode.ENDLESS) {
+        // Endless mode - advance to next wave
+        const nextWave = this.levelSystem.advanceLevel()
+        this.emit('levelUpdate', nextWave)
+        // Reset bullets but keep player alive in endless mode
+        this.bulletSystem.reset()
       } else {
         // Next level
         this.levelSystem.advanceLevel()
@@ -499,8 +638,150 @@ export class GameEngine {
   // Handle game over
   private handleGameOver() {
     this.gameState = GameState.GAMEOVER
-    this.emit('stateChange', this.gameState)
     this.gameLoop.stop()
+    this.emit('stateChange', this.gameState)
+  }
+
+  // Handle endless mode power-ups and life gain
+  private lastLifeGainScore: number = 0
+  private slowEffectEndTime: number = 0
+  private doubleScoreEndTime: number = 0
+  private shieldActive: boolean = false
+  private shieldEndTime: number = 0
+
+  private handleEndlessModePowerUps() {
+    const currentScore = this.scoreSystem.getScore()
+    const config = GAME_CONFIG.ENDLESS_MODE
+
+    // Update magnet effect
+    if (this.playerId) {
+      const player = this.tankSystem.getTank(this.playerId)
+      if (player) {
+        this.powerUpSystem.updateMagnet(player.position.x, player.position.y)
+      }
+    }
+
+    // Update slow effect
+    if (Date.now() > this.slowEffectEndTime && this.slowEffectEndTime > 0) {
+      this.slowEffectEndTime = 0
+      // Reset enemy speeds
+      const enemies = this.tankSystem.getEnemies()
+      for (const enemy of enemies) {
+        const originalConfig = GAME_CONFIG.TANK_CONFIGS[enemy.type]
+        if (originalConfig) {
+          enemy.speed = originalConfig.speed
+        }
+      }
+    }
+
+    // Check for power-up collision with player
+    if (this.playerId) {
+      const player = this.tankSystem.getTank(this.playerId)
+      if (player) {
+        const powerUp = this.powerUpSystem.checkCollision(
+          player.position.x,
+          player.position.y,
+          GAME_CONFIG.TANK_SIZE
+        )
+
+        if (powerUp) {
+          this.applyPowerUp(player, powerUp.type)
+        }
+      }
+    }
+
+    // Check for power-up collision with player 2 (for multiplayer)
+    if (this.player2Id) {
+      const player2 = this.tankSystem.getTank(this.player2Id)
+      if (player2) {
+        const powerUp = this.powerUpSystem.checkCollision(
+          player2.position.x,
+          player2.position.y,
+          GAME_CONFIG.TANK_SIZE
+        )
+
+        if (powerUp) {
+          this.applyPowerUp(player2, powerUp.type)
+        }
+      }
+    }
+
+    // Life gain: every 1000 points = +1 life, max 3 lives
+    if (currentScore - this.lastLifeGainScore >= config.livesPerScore) {
+      this.lastLifeGainScore = currentScore
+      if (this.player1Lives < config.maxLives) {
+        this.player1Lives++
+        this.emit('livesUpdate', this.player1Lives)
+      }
+    }
+  }
+
+  // Apply power-up effect to a tank
+  private applyPowerUp(tank: any, powerUpType: PowerUpType) {
+    const config = GAME_CONFIG.POWER_UPS
+    const typeKey = powerUpType as unknown as keyof typeof config.TYPES
+    const typeConfig = config.TYPES[typeKey] as any
+    const duration = typeConfig?.duration || config.DURATION_MS
+
+    if (powerUpType === PowerUpType.SPEED_BOOST) {
+      tank.speedBoostEndTime = Date.now() + duration
+      tank.speed = GAME_CONFIG.PLAYER_SPEED * 2
+    } else if (powerUpType === PowerUpType.TRIPLE_BULLET) {
+      tank.tripleBulletEndTime = Date.now() + duration
+    } else if (powerUpType === PowerUpType.SHIELD) {
+      this.shieldActive = true
+      this.shieldEndTime = Date.now() + (typeConfig?.duration || 3000)
+    } else if (powerUpType === PowerUpType.BOMB) {
+      this.triggerBomb()
+    } else if (powerUpType === PowerUpType.MAGNET) {
+      this.powerUpSystem.setMagnetActive(duration)
+    } else if (powerUpType === PowerUpType.SLOW) {
+      this.slowEffectEndTime = Date.now() + duration
+      this.applySlowEffect()
+    } else if (powerUpType === PowerUpType.DOUBLE_SCORE) {
+      this.doubleScoreEndTime = Date.now() + duration
+    }
+  }
+
+  // Apply slow effect to all enemies
+  private applySlowEffect() {
+    const enemies = this.tankSystem.getEnemies()
+    for (const enemy of enemies) {
+      const originalConfig = GAME_CONFIG.TANK_CONFIGS[enemy.type]
+      if (originalConfig) {
+        enemy.speed = originalConfig.speed * 0.5
+      }
+    }
+  }
+
+  // Trigger bomb - destroy all enemies on screen
+  private triggerBomb() {
+    // Get enemy positions before removing them (for explosion effects)
+    const enemyPositions = this.tankSystem.getEnemyPositions()
+
+    // Trigger explosion effects at each enemy position
+    this.effectSystem.triggerBombExplosions(enemyPositions)
+
+    const enemies = this.tankSystem.getEnemies()
+    for (const enemy of enemies) {
+      const score = EnemyAI.getScoreForType(enemy.type)
+      // Check for double score
+      const scoreMultiplier = Date.now() < this.doubleScoreEndTime ? 2 : 1
+      this.scoreSystem.addScore(score * scoreMultiplier)
+      this.levelSystem.recordEnemyDestroyed()
+      this.tankSystem.removeTank(enemy.id)
+      this.enemyAI.unregisterEnemy(enemy.id)
+    }
+  }
+
+  // Check if player has shield active
+  private hasShield(): boolean {
+    if (!this.shieldActive) return false
+    if (Date.now() > this.shieldEndTime) {
+      this.shieldActive = false
+      return false
+    }
+    return true
   }
 
   // Render game
@@ -520,8 +801,27 @@ export class GameEngine {
     // Render tanks
     this.tankSystem.render()
 
+    // Render shield effects for players with active shield
+    if (this.shieldActive && Date.now() < this.shieldEndTime) {
+      const players = this.tankSystem.getPlayerPositions()
+      const time = Date.now()
+      for (const playerPos of players) {
+        const fakeTank = {
+          position: { x: playerPos.x, y: playerPos.y },
+          size: { width: playerPos.size, height: playerPos.size },
+        }
+        this.tankSystem.renderShieldEffect(fakeTank as any, time)
+      }
+    }
+
     // Render bullets
     this.bulletSystem.render()
+
+    // Render power-ups
+    this.powerUpSystem.render()
+
+    // Render explosion effects
+    this.effectSystem.render()
 
     // Render overlay tiles (grass, water) on top
     this.mapSystem.renderOverlayTiles()
@@ -588,6 +888,8 @@ export class GameEngine {
     this.enemyAI.destroy()
     this.scoreSystem.destroy()
     this.levelSystem.destroy()
+    this.powerUpSystem.destroy()
+    this.effectSystem.destroy()
     this.events.clear()
   }
 }

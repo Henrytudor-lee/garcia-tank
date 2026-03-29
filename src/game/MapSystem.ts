@@ -8,6 +8,7 @@ export class MapSystem {
   private basePosition: Position = { x: 6, y: 12 } // Base is at bottom center
   private baseHp: number = 1
   private customMap: CustomMap | null = null
+  private showBase: boolean = true
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -104,7 +105,57 @@ export class MapSystem {
     for (const pos of structures) {
       tiles[pos.y][pos.x] = { type: TileType.BRICK, x: pos.x, y: pos.y }
     }
- 
+
+    // Add random steel walls for variety (not blocking spawn areas)
+    // Steel walls are placed in middle areas, away from player spawn (bottom) and base (top)
+    const steelWallCandidates = [
+      { x: 4, y: 3 }, { x: 8, y: 3 },
+      { x: 3, y: 6 }, { x: 9, y: 6 },
+      { x: 4, y: 9 }, { x: 8, y: 9 },
+      { x: 6, y: 5 }, { x: 5, y: 7 }, { x: 7, y: 7 },
+      { x: 2, y: 4 }, { x: 10, y: 4 },
+      { x: 2, y: 7 }, { x: 10, y: 7 },
+    ]
+    // Randomly select 4-6 positions for steel walls
+    const steelCount = Math.floor(Math.random() * 3) + 4 // 4-6 steel walls
+    const shuffled = steelWallCandidates.sort(() => Math.random() - 0.5)
+    for (let i = 0; i < Math.min(steelCount, shuffled.length); i++) {
+      const pos = shuffled[i]
+      if (tiles[pos.y][pos.x].type === TileType.EMPTY) {
+        tiles[pos.y][pos.x] = { type: TileType.STEEL, x: pos.x, y: pos.y }
+      }
+    }
+
+    // Add random grass patches (decorative, no collision)
+    const grassCandidates = [
+      { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 11, y: 1 }, { x: 12, y: 1 },
+      { x: 0, y: 5 }, { x: 12, y: 5 },
+      { x: 0, y: 8 }, { x: 1, y: 8 }, { x: 11, y: 8 }, { x: 12, y: 8 },
+    ]
+    const grassCount = Math.floor(Math.random() * 3) + 3 // 3-5 grass patches
+    const grassShuffled = grassCandidates.sort(() => Math.random() - 0.5)
+    for (let i = 0; i < Math.min(grassCount, grassShuffled.length); i++) {
+      const pos = grassShuffled[i]
+      if (tiles[pos.y][pos.x].type === TileType.EMPTY) {
+        tiles[pos.y][pos.x] = { type: TileType.GRASS, x: pos.x, y: pos.y }
+      }
+    }
+
+    // Add random water areas (decorative, blocks movement)
+    const waterCandidates = [
+      { x: 3, y: 1 }, { x: 4, y: 1 },
+      { x: 8, y: 1 }, { x: 9, y: 1 },
+      { x: 6, y: 3 }, { x: 7, y: 3 },
+    ]
+    const waterCount = Math.floor(Math.random() * 2) + 1 // 1-2 water areas
+    const waterShuffled = waterCandidates.sort(() => Math.random() - 0.5)
+    for (let i = 0; i < Math.min(waterCount, waterShuffled.length); i++) {
+      const pos = waterShuffled[i]
+      if (tiles[pos.y][pos.x].type === TileType.EMPTY) {
+        tiles[pos.y][pos.x] = { type: TileType.WATER, x: pos.x, y: pos.y }
+      }
+    }
+
     this.mapData.tiles = tiles
   }
 
@@ -385,6 +436,7 @@ export class MapSystem {
   }
 
   private renderBase() {
+    if (!this.showBase) return
     const { COLORS } = GAME_CONFIG
     const { tileSize } = this.mapData
     const x = this.basePosition.x * tileSize
@@ -443,6 +495,12 @@ export class MapSystem {
       this.basePosition = { x: 6, y: 12 }
     }
     this.baseHp = 1
+    this.showBase = true
+  }
+
+  // Set whether to show the base
+  setShowBase(show: boolean) {
+    this.showBase = show
   }
 
   destroy() {
