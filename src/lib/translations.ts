@@ -26,6 +26,7 @@ export const translations = {
     controls2: '空格键 射击 | P键 暂停',
     multiplayerControls: '双人模式: 玩家1(WASD+空格) 玩家2(方向键+0)',
     singlePlayer: '单人模式',
+    endlessMode: '无尽模式',
     multiplayer: '双人模式',
 
     // Game states
@@ -153,6 +154,7 @@ export const translations = {
     controls2: 'Space to Fire | P to Pause',
     multiplayerControls: 'Multiplayer: Player1(WASD+Space) Player2(Arrows+0)',
     singlePlayer: 'Single Player',
+    endlessMode: 'Endless Mode',
     multiplayer: 'Multiplayer',
 
     // Game states

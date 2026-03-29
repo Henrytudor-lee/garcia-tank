@@ -42,7 +42,7 @@ export async function addScore(
     email?: string
     mapId?: string
     mapName?: string
-    gameMode?: 'single' | 'multiplayer'
+    gameMode?: 'single' | 'multiplayer' | 'endless'
   }
 ): Promise<boolean> {
   // Don't save if score is 0 or negative
@@ -101,7 +101,7 @@ async function addScoreDirect(
     email?: string
     mapId?: string
     mapName?: string
-    gameMode?: 'single' | 'multiplayer'
+    gameMode?: 'single' | 'multiplayer' | 'endless'
   }
 ): Promise<boolean> {
   const userIdToUse = options.userId || null

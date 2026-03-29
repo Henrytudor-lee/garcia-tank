@@ -123,7 +123,7 @@ export class TankSystem {
   }
 
   // Create enemy tank
-  createEnemy(type: TankType): Tank {
+  createEnemy(type: TankType, avoidPosition?: Position): Tank {
     const id = this.generateId()
     const config = GAME_CONFIG.TANK_CONFIGS[type]
 
@@ -133,23 +133,60 @@ export class TankSystem {
     // Use custom enemy spawns if available, otherwise use default
     let spawn: Position
     if (this.customEnemySpawns.length > 0) {
-      const spawnIdx = this.tanks.size % this.customEnemySpawns.length
-      const customSpawn = this.customEnemySpawns[spawnIdx]
+      // Filter out spawns too close to player
+      const validSpawns = this.customEnemySpawns.filter(spawnPos => {
+        if (!avoidPosition) return true
+        const spawnPixelX = spawnPos.x * tileSize
+        const spawnPixelY = spawnPos.y * tileSize
+        const dx = spawnPixelX - avoidPosition.x
+        const dy = spawnPixelY - avoidPosition.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        return distance > tileSize * 4 // At least 4 tiles away
+      })
+      const spawnList = validSpawns.length > 0 ? validSpawns : this.customEnemySpawns
+      const spawnIdx = Math.floor(Math.random() * spawnList.length)
+      const randomSpawn = spawnList[spawnIdx]
       spawn = {
-        x: customSpawn.x * tileSize,
-        y: customSpawn.y * tileSize
+        x: randomSpawn.x * tileSize,
+        y: randomSpawn.y * tileSize
       }
     } else {
       // Default spawn positions for enemies (below top border, at tile y=1)
       // Avoid x=6 which is where the base is located
+      // Make spawn more random and avoid player position
       const spawnPositions: Position[] = [
-        { x: 0 * tileSize, y: 1 * tileSize },
-        { x: 4 * tileSize, y: 1 * tileSize },
-        { x: 8 * tileSize, y: 1 * tileSize },
-        { x: 12 * tileSize, y: 1 * tileSize },
+        { x: 0, y: 1 },
+        { x: 2, y: 1 },
+        { x: 4, y: 1 },
+        { x: 6, y: 1 },
+        { x: 8, y: 1 },
+        { x: 10, y: 1 },
+        { x: 12, y: 1 },
+        { x: 1, y: 0 },
+        { x: 5, y: 0 },
+        { x: 9, y: 0 },
+        { x: 11, y: 0 },
       ]
-      const spawnIdx = this.tanks.size % spawnPositions.length
-      spawn = spawnPositions[spawnIdx]
+
+      // Filter spawn positions that are too close to player
+      const validSpawns = spawnPositions.filter(spawnPos => {
+        if (!avoidPosition) return true
+        const spawnPixelX = spawnPos.x * tileSize
+        const spawnPixelY = spawnPos.y * tileSize
+        const dx = spawnPixelX - avoidPosition.x
+        const dy = spawnPixelY - avoidPosition.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        return distance > tileSize * 4 // At least 4 tiles away
+      })
+
+      // Pick a random valid spawn
+      const spawnList = validSpawns.length > 0 ? validSpawns : spawnPositions
+      const randomIdx = Math.floor(Math.random() * spawnList.length)
+      const randomSpawn = spawnList[randomIdx]
+      spawn = {
+        x: randomSpawn.x * tileSize,
+        y: randomSpawn.y * tileSize
+      }
     }
 
     // Get tank size based on tile size
@@ -248,7 +285,7 @@ export class TankSystem {
   }
 
   // Fire bullet from tank
-  fire(tankId: string): { success: boolean; bullet?: any } {
+  fire(tankId: string): { success: boolean; bullet?: any; extraBullets?: any[] } {
     const tank = this.tanks.get(tankId)
     if (!tank) return { success: false }
 
@@ -268,42 +305,59 @@ export class TankSystem {
     let bulletY = tank.position.y + tank.size.height / 2 - bulletSize / 2
 
     const bulletSpeed = GAME_CONFIG.BULLET_SPEED
-    let velocityX = 0
-    let velocityY = 0
 
-    switch (tank.direction) {
-      case Direction.UP:
-        bulletY -= bulletSize
-        velocityY = -bulletSpeed
-        break
-      case Direction.DOWN:
-        bulletY += tank.size.height
-        velocityY = bulletSpeed
-        break
-      case Direction.LEFT:
-        bulletX -= bulletSize
-        velocityX = -bulletSpeed
-        break
-      case Direction.RIGHT:
-        bulletX += tank.size.width
-        velocityX = bulletSpeed
-        break
+    // Check for triple bullet effect
+    const hasTripleBullet = tank.tripleBulletEndTime && tank.tripleBulletEndTime > now
+
+    const directions: number[] = hasTripleBullet ? [-0.3, 0, 0.3] : [0]
+
+    const bullets: any[] = []
+    for (const offset of directions) {
+      let velX = 0
+      let velY = 0
+      let bx = bulletX
+      let by = bulletY
+
+      switch (tank.direction) {
+        case Direction.UP:
+          by -= bulletSize
+          velY = -bulletSpeed
+          bx += offset * 20
+          break
+        case Direction.DOWN:
+          by += tank.size.height
+          velY = bulletSpeed
+          bx += offset * 20
+          break
+        case Direction.LEFT:
+          bx -= bulletSize
+          velX = -bulletSpeed
+          by += offset * 20
+          break
+        case Direction.RIGHT:
+          bx += tank.size.width
+          velX = bulletSpeed
+          by += offset * 20
+          break
+      }
+
+      const bullet = {
+        id: `bullet_${++this.idCounter}`,
+        position: { x: bx, y: by },
+        size: { width: bulletSize, height: bulletSize },
+        direction: tank.direction,
+        speed: bulletSpeed,
+        velocityX: velX,
+        velocityY: velY,
+        damage: GAME_CONFIG.BULLET_DAMAGE,
+        ownerId: tankId,
+        isPlayerBullet: tank.isPlayer,
+      }
+      bullets.push(bullet)
     }
 
-    const bullet = {
-      id: `bullet_${++this.idCounter}`,
-      position: { x: bulletX, y: bulletY },
-      size: { width: bulletSize, height: bulletSize },
-      direction: tank.direction,
-      speed: bulletSpeed,
-      velocityX,
-      velocityY,
-      damage: GAME_CONFIG.BULLET_DAMAGE,
-      ownerId: tankId,
-      isPlayerBullet: tank.isPlayer,
-    }
-
-    return { success: true, bullet }
+    // Return first bullet for compatibility, but GameEngine will add all
+    return { success: true, bullet: bullets[0], extraBullets: bullets.slice(1) }
   }
 
   // Get tank by ID
@@ -376,6 +430,28 @@ export class TankSystem {
     for (const tank of allTanks) {
       this.renderTank(tank)
     }
+  }
+
+  // Get all enemies with positions (for explosion effects)
+  getEnemyPositions(): { x: number; y: number; size: number }[] {
+    return Array.from(this.tanks.values())
+      .filter(t => !t.isPlayer)
+      .map(t => ({
+        x: t.position.x,
+        y: t.position.y,
+        size: t.size.width,
+      }))
+  }
+
+  // Get player positions (for shield rendering)
+  getPlayerPositions(): { x: number; y: number; size: number }[] {
+    return Array.from(this.tanks.values())
+      .filter(t => t.isPlayer)
+      .map(t => ({
+        x: t.position.x,
+        y: t.position.y,
+        size: t.size.width,
+      }))
   }
 
   private renderTank(tank: Tank) {
@@ -452,6 +528,50 @@ export class TankSystem {
       this.ctx.lineWidth = 2
       this.ctx.strokeRect(x - 2, y - 2, width + 4, height + 4)
     }
+  }
+
+  // Render shield effect for a player tank
+  renderShieldEffect(tank: Tank, time: number) {
+    const { x, y } = tank.position
+    const { width, height } = tank.size
+    const centerX = x + width / 2
+    const centerY = y + height / 2
+
+    // Pulsing effect
+    const pulse = Math.sin(time * 0.01) * 0.3 + 0.7
+    const radius = (width + height) / 2 + 5 + Math.sin(time * 0.005) * 3
+
+    // Draw outer glow
+    const gradient = this.ctx.createRadialGradient(
+      centerX, centerY, width * 0.3,
+      centerX, centerY, radius
+    )
+    gradient.addColorStop(0, `rgba(136, 136, 255, 0)`)
+    gradient.addColorStop(0.5, `rgba(136, 136, 255, ${0.3 * pulse})`)
+    gradient.addColorStop(0.8, `rgba(200, 200, 255, ${0.5 * pulse})`)
+    gradient.addColorStop(1, `rgba(136, 136, 255, 0)`)
+
+    this.ctx.fillStyle = gradient
+    this.ctx.beginPath()
+    this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+    this.ctx.fill()
+
+    // Draw rotating ring effect
+    this.ctx.strokeStyle = `rgba(200, 200, 255, ${0.6 * pulse})`
+    this.ctx.lineWidth = 2
+    this.ctx.setLineDash([10, 5])
+    this.ctx.lineDashOffset = time * 0.05
+    this.ctx.beginPath()
+    this.ctx.arc(centerX, centerY, radius - 2, 0, Math.PI * 2)
+    this.ctx.stroke()
+    this.ctx.setLineDash([])
+
+    // Draw inner bright ring
+    this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * pulse})`
+    this.ctx.lineWidth = 1.5
+    this.ctx.beginPath()
+    this.ctx.arc(centerX, centerY, radius - 6, 0, Math.PI * 2)
+    this.ctx.stroke()
   }
 
   private darkenColor(hex: string, amount: number): string {

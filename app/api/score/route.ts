@@ -40,7 +40,7 @@ function validateScore(payload: ScorePayload): { valid: boolean; error?: string 
     return { valid: false, error: 'Invalid levels completed' }
   }
 
-  if (payload.gameMode && !['single', 'multiplayer'].includes(payload.gameMode)) {
+  if (payload.gameMode && !['single', 'multiplayer', 'endless'].includes(payload.gameMode)) {
     return { valid: false, error: 'Invalid game mode' }
   }
 

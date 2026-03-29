@@ -101,6 +101,75 @@ export const GAME_CONFIG = {
     },
   ] as LevelConfig[],
 
+  // Endless mode configuration
+  ENDLESS_MODE: {
+    maxEnemiesOnMap: 4,
+    spawnInterval: 2000,
+    minSpawnInterval: 500,
+    baseEnemyScore: 10000,
+    difficultyScale: 1.1,
+    waveSize: 8,
+    livesPerScore: 1000,
+    maxLives: 3,
+    powerUpSpawnScore: 1000,
+  },
+
+  // Power-up configuration (all endless mode power-ups)
+  POWER_UPS: {
+    TILE_SIZE: 30,
+    DURATION_MS: 30000, // 30 seconds
+    DROP_CHANCE: 0.15, // 15% chance to drop from killed enemy
+    TYPES: {
+      SPEED_BOOST: {
+        name: 'speed_boost',
+        color: '#ffff00', // Yellow
+        symbol: '⚡',
+        description: '速度翻倍 30s',
+      },
+      TRIPLE_BULLET: {
+        name: 'triple_bullet',
+        color: '#00ffff', // Cyan
+        symbol: '🔱',
+        description: '三发子弹 30s',
+      },
+      SHIELD: {
+        name: 'shield',
+        color: '#8888ff', // Purple-blue
+        symbol: '🛡️',
+        description: '无敌3秒',
+        duration: 3000, // 3 seconds
+      },
+      BOMB: {
+        name: 'bomb',
+        color: '#ff4444', // Red
+        symbol: '💣',
+        description: '清屏炸弹',
+        instant: true,
+      },
+      MAGNET: {
+        name: 'magnet',
+        color: '#ff00ff', // Magenta
+        symbol: '🧲',
+        description: '吸引道具 15s',
+        duration: 15000,
+      },
+      SLOW: {
+        name: 'slow',
+        color: '#44ff44', // Green
+        symbol: '❄️',
+        description: '减速敌人 10s',
+        duration: 10000,
+      },
+      DOUBLE_SCORE: {
+        name: 'double_score',
+        color: '#ffa500', // Orange
+        symbol: '💎',
+        description: '双倍积分 10s',
+        duration: 10000,
+      },
+    },
+  },
+
   // Colors
   COLORS: {
     BRICK: '#8B4513',

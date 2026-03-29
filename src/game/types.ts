@@ -37,6 +37,18 @@ export enum GameState {
 export enum GameMode {
   SINGLE = 'single',
   MULTIPLAYER = 'multiplayer',
+  ENDLESS = 'endless',
+}
+
+// Power-up types
+export enum PowerUpType {
+  SPEED_BOOST = 'speed_boost',
+  TRIPLE_BULLET = 'triple_bullet',
+  SHIELD = 'shield',
+  BOMB = 'bomb',
+  MAGNET = 'magnet',
+  SLOW = 'slow',
+  DOUBLE_SCORE = 'double_score',
 }
 
 // Position interface
@@ -70,6 +82,15 @@ export interface Tank extends Entity {
   isPlayer: boolean
   isMoving: boolean
   spriteColor?: string
+  speedBoostEndTime?: number  // End time for speed boost effect
+  tripleBulletEndTime?: number // End time for triple bullet effect
+}
+
+// Power-up entity
+export interface PowerUp extends Entity {
+  type: PowerUpType
+  color: string
+  symbol: string
 }
 
 // Bullet entity
@@ -137,5 +158,5 @@ export interface LeaderboardEntry {
   country?: string
   mapId?: string
   mapName?: string
-  gameMode?: 'single' | 'multiplayer'
+  gameMode?: 'single' | 'multiplayer' | 'endless'
 }
