@@ -277,7 +277,9 @@ export class GameEngine {
 
     // Update UI
     this.emit('scoreUpdate', this.scoreSystem.getScore())
-    this.emit('livesUpdate', this.scoreSystem.getLives())
+    // Use player1Lives for ENDLESS mode (source of truth), otherwise use scoreSystem
+    const livesToEmit = this.gameMode === GameMode.ENDLESS ? this.player1Lives : this.scoreSystem.getLives()
+    this.emit('livesUpdate', livesToEmit)
     this.emit('levelUpdate', this.levelSystem.getCurrentLevel())
   }
 
@@ -711,6 +713,7 @@ export class GameEngine {
       this.lastLifeGainScore = currentScore
       if (this.player1Lives < config.maxLives) {
         this.player1Lives++
+        this.scoreSystem.setLives(this.player1Lives)
         this.emit('livesUpdate', this.player1Lives)
       }
     }
